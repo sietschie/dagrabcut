@@ -44,6 +44,8 @@
 #include "gcgraph.hpp"
 #include <limits>
 
+#include <iostream>
+
 using namespace cv;
 
 /*
@@ -503,9 +505,10 @@ void constructGCGraph( const Mat& img, const Mat& mask, const GMM& bgdGMM, const
 /*
   Estimate segmentation using MaxFlow algorithm
 */
-void estimateSegmentation( GCGraph<double>& graph, Mat& mask )
+double estimateSegmentation( GCGraph<double>& graph, Mat& mask )
 {
-    graph.maxFlow();
+    double flow = graph.maxFlow();
+
     Point p;
     for( p.y = 0; p.y < mask.rows; p.y++ )
     {
@@ -520,6 +523,7 @@ void estimateSegmentation( GCGraph<double>& graph, Mat& mask )
             }
         }
     }
+    return flow;
 }
 
 void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
@@ -556,13 +560,24 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
     Mat leftW, upleftW, upW, uprightW;
     calcNWeights( img, leftW, upleftW, upW, uprightW, beta, gamma );
 
+    //TODO: gibts fuer epsilon nich was passendes in opencv?
+    double last_flow = 0.0;
+    double current_flow = 100.0;
+    double eps = 0.001;
+
     for( int i = 0; i < iterCount; i++ )
     {
         GCGraph<double> graph;
         assignGMMsComponents( img, mask, bgdGMM, fgdGMM, compIdxs );
         learnGMMs( img, mask, compIdxs, bgdGMM, fgdGMM );
         constructGCGraph(img, mask, bgdGMM, fgdGMM, lambda, leftW, upleftW, upW, uprightW, graph );
-        estimateSegmentation( graph, mask );
+        current_flow = estimateSegmentation( graph, mask );
+        cout << "diff flow:" << abs(last_flow - current_flow) << endl;  
+
+        if( abs(last_flow - current_flow) < eps )
+            break;
+
+        last_flow = current_flow;
     }
 }
 

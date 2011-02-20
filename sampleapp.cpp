@@ -245,21 +245,23 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
 
 int GCApplication::nextIter()
 {
+    int max_iterations = 100;
+
     if( isInitialized )
-        grabCut( *image, mask, rect, bgdModel, fgdModel, 1 );
+        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
     else
     {
         if( rectState != SET )
             return iterCount;
 
         if( lblsState == SET || prLblsState == SET )
-            cg_grabCut( *image, mask, rect, bgdModel, fgdModel, 1, GC_INIT_WITH_MASK );
+            cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations, GC_INIT_WITH_MASK );
         else
-            cg_grabCut( *image, mask, rect, bgdModel, fgdModel, 1, GC_INIT_WITH_RECT );
+            cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations, GC_INIT_WITH_RECT );
 
         isInitialized = true;
     }
-    iterCount++;
+    iterCount += max_iterations;
 
     bgdPxls.clear(); fgdPxls.clear();
     prBgdPxls.clear(); prFgdPxls.clear();
