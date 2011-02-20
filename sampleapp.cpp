@@ -12,14 +12,11 @@ void help()
     cout << "\nThis program demonstrates GrabCut segmentation -- select an object in a region\n"
     		"and then grabcut will attempt to segment it out.\n"
     		"Call:\n"
-    		"./grabcut <image_name>\n"
-    	"\nSelect a rectangular area around the object you want to segment\n" <<
+    		"./grabcut <image_name> <mask_name>\n"
         "\nHot keys: \n"
         "\tESC - quit the program\n"
         "\tr - restore the original image\n"
         "\tn - next iteration\n"
-        "\n"
-        "\tleft mouse button - set rectangle\n"
         "\n"
         "\tCTRL+left mouse button - set GC_BGD pixels\n"
         "\tSHIFT+left mouse button - set CG_FGD pixels\n"
@@ -54,7 +51,7 @@ public:
     static const int thickness = -1;
 
     void reset();
-    void setImageAndWinName( const Mat& _image, const string& _winName );
+    void setImageAndWinName( const Mat& _image, const string& _winName, Mat& _mask );
     void showImage() const;
     void mouseClick( int event, int x, int y, int flags, void* param );
     int nextIter();
@@ -65,38 +62,37 @@ private:
 
     const string* winName;
     const Mat* image;
+    Mat input_mask;
     Mat mask;
     Mat bgdModel, fgdModel;
 
-    uchar rectState, lblsState, prLblsState;
+    uchar lblsState, prLblsState;
     bool isInitialized;
 
-    Rect rect;
     vector<Point> fgdPxls, bgdPxls, prFgdPxls, prBgdPxls;
     int iterCount;
 };
 
 void GCApplication::reset()
 {
-    if( !mask.empty() )
-        mask.setTo(Scalar::all(GC_BGD));
+    mask = input_mask.clone();
     bgdPxls.clear(); fgdPxls.clear();
     prBgdPxls.clear();  prFgdPxls.clear();
 
     isInitialized = false;
-    rectState = NOT_SET;
     lblsState = NOT_SET;
     prLblsState = NOT_SET;
     iterCount = 0;
 }
 
-void GCApplication::setImageAndWinName( const Mat& _image, const string& _winName  )
+void GCApplication::setImageAndWinName( const Mat& _image, const string& _winName, Mat& _mask  )
 {
     if( _image.empty() || _winName.empty() )
         return;
     image = &_image;
     winName = &_winName;
-    mask.create( image->size(), CV_8UC1);
+    //mask.create( image->size(), CV_8UC1);
+    input_mask = _mask; // TODO: is it good to do it that way? or better pointer to mask?
     reset();
 }
 
@@ -125,21 +121,7 @@ void GCApplication::showImage() const
     for( it = prFgdPxls.begin(); it != prFgdPxls.end(); ++it )
         circle( res, *it, radius, PINK, thickness );
 
-    if( rectState == IN_PROCESS || rectState == SET )
-        rectangle( res, Point( rect.x, rect.y ), Point(rect.x + rect.width, rect.y + rect.height ), GREEN, 2);
-
     imshow( *winName, res );
-}
-
-void GCApplication::setRectInMask()
-{
-    assert( !mask.empty() );
-    mask.setTo( GC_BGD );
-    rect.x = max(0, rect.x);
-    rect.y = max(0, rect.y);
-    rect.width = min(rect.width, image->cols-rect.x);
-    rect.height = min(rect.height, image->rows-rect.y);
-    (mask(rect)).setTo( Scalar(GC_PR_FGD) );
 }
 
 void GCApplication::setLblsInMask( int flags, Point p, bool isPr )
@@ -181,12 +163,7 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
         {
             bool isb = (flags & BGD_KEY) != 0,
                  isf = (flags & FGD_KEY) != 0;
-            if( rectState == NOT_SET && !isb && !isf )
-            {
-                rectState = IN_PROCESS;
-                rect = Rect( x, y, 1, 1 );
-            }
-            if ( (isb || isf) && rectState == SET )
+            if ( (isb || isf) )
                 lblsState = IN_PROCESS;
         }
         break;
@@ -194,19 +171,11 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
         {
             bool isb = (flags & BGD_KEY) != 0,
                  isf = (flags & FGD_KEY) != 0;
-            if ( (isb || isf) && rectState == SET )
+            if ( (isb || isf) )
                 prLblsState = IN_PROCESS;
         }
         break;
     case CV_EVENT_LBUTTONUP:
-        if( rectState == IN_PROCESS )
-        {
-            rect = Rect( Point(rect.x, rect.y), Point(x,y) );
-            rectState = SET;
-            setRectInMask();
-            assert( bgdPxls.empty() && fgdPxls.empty() && prBgdPxls.empty() && prFgdPxls.empty() );
-            showImage();
-        }
         if( lblsState == IN_PROCESS )
         {
             setLblsInMask(flags, Point(x,y), false);
@@ -223,13 +192,7 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
         }
         break;
     case CV_EVENT_MOUSEMOVE:
-        if( rectState == IN_PROCESS )
-        {
-            rect = Rect( Point(rect.x, rect.y), Point(x,y) );
-            assert( bgdPxls.empty() && fgdPxls.empty() && prBgdPxls.empty() && prFgdPxls.empty() );
-            showImage();
-        }
-        else if( lblsState == IN_PROCESS )
+        if( lblsState == IN_PROCESS )
         {
             setLblsInMask(flags, Point(x,y), false);
             showImage();
@@ -246,18 +209,13 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
 int GCApplication::nextIter()
 {
     int max_iterations = 100;
+    Rect rect;
 
     if( isInitialized )
         cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
     else
     {
-        if( rectState != SET )
-            return iterCount;
-
-        if( lblsState == SET || prLblsState == SET )
-            cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations, GC_INIT_WITH_MASK );
-        else
-            cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations, GC_INIT_WITH_RECT );
+        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations, GC_INIT_WITH_MASK );
 
         isInitialized = true;
     }
@@ -278,7 +236,7 @@ void on_mouse( int event, int x, int y, int flags, void* param )
 
 int main( int argc, char** argv )
 {
-    if( argc!=2 )
+    if( argc!=3 )
     {
     	help();
         return 1;
@@ -295,14 +253,34 @@ int main( int argc, char** argv )
         cout << "\n Durn, couldn't read image filename " << filename << endl;
     	return 1;
     }
+    string maskfilename = argv[2];
+    if( maskfilename.empty() )
+    {
+    	cout << "\nDurn, couldn't read in " << argv[2] << endl;
+        return 1;
+    }
+    Mat mask = imread( maskfilename, 1 );
+    if( mask.empty() )
+    {
+        cout << "\n Durn, couldn't read mask filename " << maskfilename << endl;
+    	return 1;
+    }
 
+    Mat transform(1, 3, DataType<double>::type);
+    transform.at<double>(0,0) = 1.0 * GC_PR_FGD / (255 * 3);
+    transform.at<double>(0,1) = 1.0 * GC_PR_FGD / (255 * 3);
+    transform.at<double>(0,2) = 1.0 * GC_PR_FGD / (255 * 3);
+
+    Mat mask2(mask.rows, mask.cols, DataType<uchar>::type);
+
+    cv::transform(mask, mask2, transform);
     help();
 
     const string winName = "image";
     cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
     cvSetMouseCallback( winName.c_str(), on_mouse, 0 );
 
-    gcapp.setImageAndWinName( image, winName );
+    gcapp.setImageAndWinName( image, winName, mask2 );
     gcapp.showImage();
 
     for(;;)
