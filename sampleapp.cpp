@@ -3,6 +3,7 @@
 #include "grabcut.hpp"
 
 #include <iostream>
+#include <stdio.h>
 
 using namespace std;
 using namespace cv;
@@ -32,11 +33,11 @@ public:
     void showImage() const;
     int nextIter();
     int getIterCount() const { return iterCount; }
+    Mat mask;
 private:
     const string* winName;
     const Mat* image;
     Mat input_mask;
-    Mat mask;
     Mat bgdModel, fgdModel;
 
     bool isInitialized;
@@ -87,10 +88,6 @@ int GCApplication::nextIter()
         isInitialized = true;
     }
     iterCount += max_iterations;
-
-    FileStorage fs("test.yml", FileStorage::WRITE);
-    fs << "mask" << mask;
-    
 
     return iterCount;
 }
@@ -155,6 +152,13 @@ int main( int argc, char** argv )
         gcapp.showImage();
         cout << iterCount << ">" << endl;
     }
+
+    char ymlfilename[200];
+
+    sprintf(ymlfilename, "%s.mask.yml", argv[1]); //TODO: dafuer iostreams benutzen?
+
+    FileStorage fs(ymlfilename, FileStorage::WRITE);
+    fs << "mask" << gcapp.mask;
 
     cvWaitKey(0);
 
