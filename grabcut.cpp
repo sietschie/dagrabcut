@@ -521,6 +521,27 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
         initGMMs( img, mask, bgdGMM, fgdGMM );
     }
 
+    mask.create( img.size(), CV_8UC1 );
+    mask.setTo( GC_PR_FGD );
+
+    Point p;
+    for( p.y = 0; p.y < mask.rows; p.y++ )
+    {
+        for( p.x = 0; p.x < mask.cols; p.x++ )
+        {
+            if( mask.at<uchar>(p) == GC_PR_BGD || mask.at<uchar>(p) == GC_PR_FGD )
+            {
+                double bgd = bgdGMM((Vec3f)img.at<Vec3b>(p));
+                double fgd = fgdGMM((Vec3f)img.at<Vec3b>(p));
+                if( bgd > fgd)
+                    mask.at<uchar>(p) = GC_PR_BGD;
+                else
+                    mask.at<uchar>(p) = GC_PR_FGD;
+            }
+        }
+    }
+
+
     if( iterCount <= 0)
         return;
 

@@ -29,7 +29,7 @@ void getBinMask( const Mat& comMask, Mat& binMask )
 class GCApplication
 {
 public:
-    void setImageAndWinName( const Mat& _image, const string& _winName, Mat& _mask );
+    void setImageAndWinName( const Mat& _image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel );
     void showImage() const;
     int nextIter();
     int getIterCount() const { return iterCount; }
@@ -39,21 +39,25 @@ private:
     const Mat* image;
     Mat input_mask;
     Mat bgdModel, fgdModel;
+    Mat input_bgdModel, input_fgdModel;
 
     bool isInitialized;
 
     int iterCount;
 };
 
-void GCApplication::setImageAndWinName( const Mat& _image, const string& _winName, Mat& _mask  )
+void GCApplication::setImageAndWinName( const Mat& _image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel )
 {
     if( _image.empty() || _winName.empty() )
         return;
     image = &_image;
     winName = &_winName;
-    //mask.create( image->size(), CV_8UC1);
-    input_mask = _mask; // TODO: is it good to do it that way? or better pointer to mask?
-    mask = input_mask.clone();
+
+    input_bgdModel = _bgdModel;
+    input_fgdModel = _fgdModel;
+
+    bgdModel = input_bgdModel.clone();
+    fgdModel = input_fgdModel.clone();
 }
 
 void GCApplication::showImage() const
@@ -68,6 +72,9 @@ void GCApplication::showImage() const
     else
     {
         getBinMask( mask, binMask );
+        FileStorage fs("test2.yml", FileStorage::WRITE);
+        fs << "mask" << binMask;
+
         image->copyTo( res, binMask );
     }
 
@@ -76,17 +83,12 @@ void GCApplication::showImage() const
 
 int GCApplication::nextIter()
 {
-    int max_iterations = 100;
+    isInitialized = true;
+    int max_iterations = 1;
     Rect rect;
 
-    if( isInitialized )
-        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
-    else
-    {
-        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations, GC_INIT_WITH_MASK );
+    cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
 
-        isInitialized = true;
-    }
     iterCount += max_iterations;
 
     return iterCount;
@@ -96,15 +98,92 @@ GCApplication gcapp;
 
 int main( int argc, char** argv )
 {
-    if( argc!=3 )
+    if( argc < 3 )
     {
     	help();
         return 1;
     }
-    string filename = argv[1];
+
+    vector<Vec3f> bgdSamples, fgdSamples;
+
+    for(int i=1; i<argc-1; i++)
+    {
+        string filename = argv[i];
+        
+        cout << "Reading " << filename << "..." << endl;
+
+        if( filename.empty() )
+        {
+        	cout << "\nDurn, couldn't read in " << argv[i] << endl;
+            return 1;
+        }
+        Mat image = imread( filename, 1 );
+        if( image.empty() )
+        {
+            cout << "\n Durn, couldn't read image filename " << filename << endl;
+        	return 1;
+        }
+        
+        string mask_filename = filename;
+        mask_filename.append(".mask.yml");
+
+        FileStorage fs(mask_filename, FileStorage::READ);
+        Mat mask; fs["mask"] >> mask;
+
+        Point p;
+        for( p.y = 0; p.y < image.rows; p.y++ )
+        {
+            for( p.x = 0; p.x < image.cols; p.x++ )
+            {
+                if( mask.at<uchar>(p) == GC_BGD || mask.at<uchar>(p) == GC_PR_BGD )
+                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+                else // GC_FGD | GC_PR_FGD
+                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+            }
+        }
+
+    }
+
+    cout << "starting k-Means..." << endl;
+
+    const int kMeansItCount = 10;
+    const int kMeansType = KMEANS_PP_CENTERS;
+
+    Mat bgdLabels, fgdLabels;
+    CV_Assert( !bgdSamples.empty() && !fgdSamples.empty() );
+    Mat _bgdSamples( (int)bgdSamples.size(), 3, CV_32FC1, &bgdSamples[0][0] );
+    kmeans( _bgdSamples, GMM::componentsCount, bgdLabels,
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
+    Mat _fgdSamples( (int)fgdSamples.size(), 3, CV_32FC1, &fgdSamples[0][0] );
+    kmeans( _fgdSamples, GMM::componentsCount, fgdLabels,
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
+
+    cout << "start learning GMM..." << endl;
+    
+    Mat bgdModel, fgdModel;
+    GMM bgdGMM(bgdModel), fgdGMM(fgdModel);
+
+    bgdGMM.initLearning();
+    for( int i = 0; i < (int)bgdSamples.size(); i++ )
+        bgdGMM.addSample( bgdLabels.at<int>(i,0), bgdSamples[i] );
+    bgdGMM.endLearning();
+
+    fgdGMM.initLearning();
+    for( int i = 0; i < (int)fgdSamples.size(); i++ )
+        fgdGMM.addSample( fgdLabels.at<int>(i,0), fgdSamples[i] );
+    fgdGMM.endLearning();
+
+    cout << "finished learning GMM..." << endl;
+
+    help();
+
+    string filename = argv[argc-1];
+    
+    cout << "Reading " << filename << "..." << endl;
+
     if( filename.empty() )
     {
-    	cout << "\nDurn, couldn't read in " << argv[1] << endl;
+    	cout << "\nDurn, couldn't read in " << argv[argc-1] << endl;
         return 1;
     }
     Mat image = imread( filename, 1 );
@@ -113,33 +192,12 @@ int main( int argc, char** argv )
         cout << "\n Durn, couldn't read image filename " << filename << endl;
     	return 1;
     }
-    string maskfilename = argv[2];
-    if( maskfilename.empty() )
-    {
-    	cout << "\nDurn, couldn't read in " << argv[2] << endl;
-        return 1;
-    }
-    Mat mask = imread( maskfilename, 1 );
-    if( mask.empty() )
-    {
-        cout << "\n Durn, couldn't read mask filename " << maskfilename << endl;
-    	return 1;
-    }
 
-    Mat transform(1, 3, DataType<double>::type);
-    transform.at<double>(0,0) = 1.0 * GC_PR_FGD / (255 * 3);
-    transform.at<double>(0,1) = 1.0 * GC_PR_FGD / (255 * 3);
-    transform.at<double>(0,2) = 1.0 * GC_PR_FGD / (255 * 3);
-
-    Mat mask2(mask.rows, mask.cols, DataType<uchar>::type);
-
-    cv::transform(mask, mask2, transform);
-    help();
 
     const string winName = "image";
     cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
 
-    gcapp.setImageAndWinName( image, winName, mask2 );
+    gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
     gcapp.showImage();
 
     cvWaitKey(0);
@@ -161,7 +219,6 @@ int main( int argc, char** argv )
     fs << "mask" << gcapp.mask;
 
     cvWaitKey(0);
-
 
 exit_main:
     cvDestroyWindow( winName.c_str() );
