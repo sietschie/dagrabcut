@@ -35,6 +35,7 @@ public:
     int getIterCount() const { return iterCount; }
     Mat mask;
     Mat bgdModel, fgdModel;
+    Mat compIdxs;
 private:
     const string* winName;
     const Mat* image;
@@ -80,10 +81,10 @@ int GCApplication::nextIter()
     Rect rect;
 
     if( isInitialized )
-        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
+        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, compIdxs, max_iterations );
     else
     {
-        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations, GC_INIT_WITH_MASK );
+        cg_grabCut( *image, mask, rect, bgdModel, fgdModel, compIdxs, max_iterations, GC_INIT_WITH_MASK );
 
         isInitialized = true;
     }
@@ -155,18 +156,14 @@ int main( int argc, char** argv )
 
     char ymlfilename[200];
 
-    sprintf(ymlfilename, "%s.mask.yml", argv[1]); //TODO: dafuer iostreams benutzen?
+    sprintf(ymlfilename, "%s.grabcut-output.yml", argv[1]); //TODO: dafuer iostreams benutzen?
 
     FileStorage fs(ymlfilename, FileStorage::WRITE);
+    fs << "tmp" << 2;
     fs << "mask" << gcapp.mask;
-
-
-    sprintf(ymlfilename, "%s.gmm.yml", argv[1]); //TODO: dafuer iostreams benutzen?
-
-    FileStorage fs2(ymlfilename, FileStorage::WRITE);
-    fs2 << "test" << 2;
-    fs2 << "fgdModel" << gcapp.fgdModel;
-    fs2 << "bgdModel" << gcapp.bgdModel;
+    fs << "fgdModel" << gcapp.fgdModel;
+    fs << "bgdModel" << gcapp.bgdModel;
+    fs << "componentIndexes" << gcapp.compIdxs;
 
     cvWaitKey(0);
 

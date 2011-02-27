@@ -527,7 +527,7 @@ double estimateSegmentation( GCGraph<double>& graph, Mat& mask )
 }
 
 void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
-             Mat& bgdModel, Mat& fgdModel,
+             Mat& bgdModel, Mat& fgdModel, Mat& compIdxs,
              int iterCount, int mode )
 {
     if( img.empty() )
@@ -536,7 +536,7 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
         CV_Error( CV_StsBadArg, "image mush have CV_8UC3 type" );
 
     GMM bgdGMM( bgdModel ), fgdGMM( fgdModel );
-    Mat compIdxs( img.size(), CV_32SC1 );
+    compIdxs = Mat( img.size(), CV_32SC1 );
 
     if( mode == GC_INIT_WITH_RECT || mode == GC_INIT_WITH_MASK )
     {
