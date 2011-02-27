@@ -34,11 +34,11 @@ public:
     int nextIter();
     int getIterCount() const { return iterCount; }
     Mat mask;
+    Mat bgdModel, fgdModel;
 private:
     const string* winName;
     const Mat* image;
     Mat input_mask;
-    Mat bgdModel, fgdModel;
 
     bool isInitialized;
 
@@ -159,6 +159,14 @@ int main( int argc, char** argv )
 
     FileStorage fs(ymlfilename, FileStorage::WRITE);
     fs << "mask" << gcapp.mask;
+
+
+    sprintf(ymlfilename, "%s.gmm.yml", argv[1]); //TODO: dafuer iostreams benutzen?
+
+    FileStorage fs2(ymlfilename, FileStorage::WRITE);
+    fs2 << "test" << 2;
+    fs2 << "fgdModel" << gcapp.fgdModel;
+    fs2 << "bgdModel" << gcapp.bgdModel;
 
     cvWaitKey(0);
 
