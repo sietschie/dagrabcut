@@ -97,7 +97,7 @@ GCApplication gcapp;
 
 int main( int argc, char** argv )
 {
-    if( argc!=3 )
+    if( argc!=2 )
     {
     	help();
         return 1;
@@ -114,12 +114,10 @@ int main( int argc, char** argv )
         cout << "\n Durn, couldn't read image filename " << filename << endl;
     	return 1;
     }
-    string maskfilename = argv[2];
-    if( maskfilename.empty() )
-    {
-    	cout << "\nDurn, couldn't read in " << argv[2] << endl;
-        return 1;
-    }
+
+    char maskfilename[200];
+    sprintf(maskfilename, "%s.GT.bmp", argv[1]); //TODO: dafuer iostreams benutzen?
+
     Mat mask = imread( maskfilename, 1 );
     if( mask.empty() )
     {
