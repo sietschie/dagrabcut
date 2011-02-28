@@ -38,25 +38,29 @@ int main( int argc, char** argv )
         Mat fgdModel; fs["fgdModel"] >> fgdModel;
 
         fgdHmm.add_model(fgdModel, compIdxs, mask & 1, image);
+        bgdHmm.add_model(bgdModel, compIdxs, 1 - (mask & 1), image);
 
 
 
     }
-    fgdHmm.cluster_once();
-    fgdHmm.cluster_once();
-    fgdHmm.cluster_once();
-    fgdHmm.cluster_once();
+    for(int i = 0; i < fgdHmm.components.size() - 1; i++)
+    {
+        fgdHmm.cluster_once();
+        bgdHmm.cluster_once();
+    }
 
     FileStorage fs2("test.yml", FileStorage::WRITE);
-    fs2 << "hmm" << fgdHmm;
+    fs2 << "first" << 2;
+    fs2 << "fgdHmm" << fgdHmm;
+    fs2 << "bgdHmm" << bgdHmm;
     fs2.release();
 
     HMM testHmm;
     FileStorage fs3("test.yml", FileStorage::READ);
-    readHMM(fs3["hmm"], testHmm);
+    readHMM(fs3["fgdHmm"], testHmm);
     fs3.release();
 
     FileStorage fs4("test2.yml", FileStorage::WRITE);
-    fs4 << "hmm" << testHmm;
+    fs4 << "fgdHmm" << testHmm;
     fs4.release();
 }

@@ -19,6 +19,7 @@ public:
 class HMM_Component{
 public:
     HMM_Component *left_child, *right_child;
+    double div;
     double weight;
     Gaussian gauss;
     std::vector<cv::Vec3b> samples;

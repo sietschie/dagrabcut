@@ -21,6 +21,7 @@ cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM_Component& component)
     fs << "{";
     fs << "weight" << component.weight;
     fs << "gauss" << component.gauss;
+    fs << "div" << component.div;
 
     std::vector<cv::Vec3b>::const_iterator itr;
     int size = component.samples.size();
@@ -55,6 +56,10 @@ void readHMM_Component(const cv::FileNode& fn, HMM_Component& hmmc)
 {
     double w = (double)fn["weight"];
     hmmc.weight = w;
+
+    double div = (double)fn["div"];
+    hmmc.div = div;
+
     Gaussian gauss;
     readGaussian(fn["gauss"], gauss);
     hmmc.gauss = gauss;
@@ -157,6 +162,7 @@ void HMM::cluster_once()
     HMM_Component *hmmc_new = new HMM_Component;
 
     hmmc_new->weight = hmmc1->weight + hmmc2->weight;
+    hmmc_new->div = minimum;
 
     hmmc_new->left_child = hmmc1;
     hmmc_new->right_child = hmmc2;
@@ -183,7 +189,7 @@ void HMM::add_model(Mat model, Mat compIdxs, Mat mask, Mat img, int dim) {
 
     int componentsCount = model.cols / modelsize;
 
-    std::cout << "componentsCount: " << componentsCount << std::endl;
+    //std::cout << "componentsCount: " << componentsCount << std::endl;
 
     double *coefs = model.ptr<double>(0);
     double *mean = coefs + componentsCount;
@@ -297,6 +303,7 @@ vector<cv::Vec3b> HMM_Component::get_all_samples(){
 HMM_Component::HMM_Component() {
     left_child = NULL;
     right_child = NULL;
+    div = 0;
 }
 
 HMM_Component::~HMM_Component() {
