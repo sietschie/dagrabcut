@@ -1,2 +1,2 @@
 all:
-	g++ `pkg-config opencv --cflags --libs` grabcut.cpp sampleapp.cpp -o prog.bin
+	g++ `pkg-config opencv --cflags --libs` hmm.cpp main.cpp -o prog.bin
