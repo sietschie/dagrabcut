@@ -9,6 +9,8 @@ using namespace std;
 
 int main( int argc, char** argv )
 {
+
+
     HMM fgdHmm, bgdHmm;
     for(int i=1; i<argc-1; i++)
     {
@@ -43,24 +45,30 @@ int main( int argc, char** argv )
 
 
     }
-    for(int i = 0; i < fgdHmm.components.size() - 1; i++)
+    while( fgdHmm.components.size() > 5)
     {
         fgdHmm.cluster_once();
         bgdHmm.cluster_once();
     }
 
-    FileStorage fs2("test.yml", FileStorage::WRITE);
+    FileStorage fs2(argv[argc-1], FileStorage::WRITE);
     fs2 << "first" << 2;
+    fs2 << "files" << "[";
+    for(int i=1; i<argc-1;i++)
+    {
+        fs2 << argv[i];
+    }
+    fs2 << "]";
     fs2 << "fgdHmm" << fgdHmm;
     fs2 << "bgdHmm" << bgdHmm;
     fs2.release();
 
-    HMM testHmm;
+/*    HMM testHmm;
     FileStorage fs3("test.yml", FileStorage::READ);
     readHMM(fs3["fgdHmm"], testHmm);
     fs3.release();
 
     FileStorage fs4("test2.yml", FileStorage::WRITE);
     fs4 << "fgdHmm" << testHmm;
-    fs4.release();
+    fs4.release();*/
 }
