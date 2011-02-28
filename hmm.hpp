@@ -33,6 +33,9 @@ public:
     void add_model(cv::Mat gmm, cv::Mat compIdxs, cv::Mat mask, cv::Mat img, int dim = 3);
     void cluster_once();
     ~HMM();
+    double operator()( const cv::Vec3d color ) const;
+    double operator()( int ci, const cv::Vec3d color ) const;
+
 };
 
 cv::FileStorage& operator<<(cv::FileStorage& fs, const Gaussian& gauss);

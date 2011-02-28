@@ -217,6 +217,51 @@ void HMM::add_model(Mat model, Mat compIdxs, Mat mask, Mat img, int dim) {
     }
 }
 
+double HMM::operator()( const Vec3d color ) const
+{
+    double res = 0;
+    for( int ci = 0; ci < components.size(); ci++ )
+        res += components[ci]->weight * (*this)(ci, color );
+    return res;
+}
+
+double HMM::operator()( int ci, const Vec3d color ) const
+{
+    double res = 0;
+    HMM_Component* hmmc = components[ci];
+    if( hmmc->weight > 0 )
+    {
+        double covDeterms = determinant(hmmc->gauss.cov);
+		CV_Assert( covDeterms > std::numeric_limits<double>::epsilon() );
+        Vec3d diff = color;
+        diff[0] -= hmmc->gauss.mean.at<double>(0,0);
+        diff[1] -= hmmc->gauss.mean.at<double>(1,0);
+        diff[2] -= hmmc->gauss.mean.at<double>(2,0);
+
+        Mat inverseCovs = hmmc->gauss.cov.inv();
+
+        double mult = 0.0;
+        for(int i=0;i<3;i++)
+        {
+            double row = 0.0;
+            for(int j=0;j<3;j++)
+            {
+                row += diff[j] * inverseCovs.at<double>(j,i);
+            }
+            mult += diff[i] * row;
+        }
+
+        //double test = diff * (inverseCovs * diff);
+
+        //double mult = diff[0]*(diff[0]*inverseCovs[0][0] + diff[1]*inverseCovs[1][0] + diff[2]*inverseCovs[2][0])
+        //           + diff[1]*(diff[0]*inverseCovs[0][1] + diff[1]*inverseCovs[1][1] + diff[2]*inverseCovs[2][1])
+        //           + diff[2]*(diff[0]*inverseCovs[0][2] + diff[1]*inverseCovs[1][2] + diff[2]*inverseCovs[2][2]);
+        res = 1.0f/sqrt(covDeterms) * exp(-0.5f*mult);
+    }
+    return res;
+}
+
+
 HMM::~HMM() {
     vector<HMM_Component*>::iterator itr;
 
