@@ -1,7 +1,8 @@
 #ifndef HMM_HPP
 #define HMM_HPP
 
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
 #include <vector>
 
 class Gaussian {
@@ -20,8 +21,8 @@ public:
     HMM_Component *left_child, *right_child;
     double weight;
     Gaussian gauss;
-    vector<cv::Vec3b> samples;
-    vector<cv::Vec3b> get_all_samples();
+    std::vector<cv::Vec3b> samples;
+    std::vector<cv::Vec3b> get_all_samples();
     HMM_Component();
     ~HMM_Component();
 };

@@ -1,9 +1,11 @@
 #include "hmm.hpp"
 #include <limits>
-
 #include <iostream>
+#include <algorithm>
+#include <vector>
 
 using namespace cv;
+using namespace std;
 
 cv::FileStorage& operator<<(cv::FileStorage& fs, const Gaussian& gauss)
 {
@@ -11,6 +13,7 @@ cv::FileStorage& operator<<(cv::FileStorage& fs, const Gaussian& gauss)
     fs << "mean" << gauss.mean;
     fs << "cov" << gauss.cov;
     fs << "}";
+    return fs;
 }
 
 cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM_Component& component)
@@ -33,6 +36,7 @@ cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM_Component& component)
     if( component.right_child != NULL )
         fs << "right_child" << *component.right_child;
     fs << "}";
+    return fs;
 }
 
 //cv::FileStorage& operator>>(cv::FileNode& fn, HMM& hmm)
@@ -119,6 +123,7 @@ cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM& hmm)
     }
     //std::cout << "hallo" << endl;
     fs << "]" << "}";
+    return fs;
 }
 
 
@@ -192,11 +197,11 @@ void HMM::add_model(Mat model, Mat compIdxs, Mat mask, Mat img, int dim) {
         hmmc->weight = coefs[i];
         
         double *cpy_mean = new double[dim];
-        copy(mean + (i*dim), mean + (i*dim) + dim, cpy_mean);
+        std::copy(mean + (i*dim), mean + (i*dim) + dim, cpy_mean);
         hmmc->gauss.mean = Mat(dim, 1, CV_64F, cpy_mean);
 
         double *cpy_cov = new double[dim * dim];
-        copy(cov + (i*dim*dim), cov + (i*dim*dim) + dim*dim, cpy_cov);
+        std::copy(cov + (i*dim*dim), cov + (i*dim*dim) + dim*dim, cpy_cov);
         hmmc->gauss.cov = Mat(dim,dim, CV_64F, cpy_cov);
 
         //TODO: muss der speicher wieder freigegeben werden?
