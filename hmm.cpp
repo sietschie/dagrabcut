@@ -202,13 +202,23 @@ void HMM::add_model(Mat model, Mat compIdxs, Mat mask, Mat img, int dim) {
         hmmc = new HMM_Component();
         hmmc->weight = coefs[i];
         
-        double *cpy_mean = new double[dim];
-        std::copy(mean + (i*dim), mean + (i*dim) + dim, cpy_mean);
-        hmmc->gauss.mean = Mat(dim, 1, CV_64F, cpy_mean);
+        double *cpy_mean = mean + (i*dim);
+        //std::copy(mean + (i*dim), mean + (i*dim) + dim, cpy_mean);
+		hmmc->gauss.mean = Mat(dim, 1, CV_64F);
+		for(int j=0;j<dim;j++)
+		{
+			hmmc->gauss.mean.at<double>(j,0) = cpy_mean[j];
+		}
+        //hmmc.gauss.mean = Mat(dim, 1, CV_64F, cpy_mean);
 
-        double *cpy_cov = new double[dim * dim];
-        std::copy(cov + (i*dim*dim), cov + (i*dim*dim) + dim*dim, cpy_cov);
-        hmmc->gauss.cov = Mat(dim,dim, CV_64F, cpy_cov);
+        double *cpy_cov = cov + (i*dim*dim);
+        //std::copy(cov + (i*dim*dim), cov + (i*dim*dim) + dim*dim, cpy_cov);
+        hmmc->gauss.cov = Mat(dim,dim, CV_64F);
+		for(int j=0;j<dim;j++)
+		for(int k=0;k<dim;k++)
+		{
+			hmmc->gauss.cov.at<double>(j,k) = cpy_mean[j + k * dim];
+		}
 
         //TODO: muss der speicher wieder freigegeben werden?
 
