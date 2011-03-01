@@ -46,6 +46,9 @@ int main( int argc, char** argv )
 
     }
 
+    cout << "KLdiv: " << fgdHmm.KLdiv(bgdHmm) << endl;
+    cout << "KLdiv: " << bgdHmm.KLdiv(fgdHmm) << endl;
+
     fgdHmm.normalize_weights();
     bgdHmm.normalize_weights();
 
