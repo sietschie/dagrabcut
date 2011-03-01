@@ -21,7 +21,7 @@ public:
 class HMM {
 public:
     std::vector<HMM_Component*> components;
-    //void normalize_weights();
+    void normalize_weights();
     void add_model(cv::Mat gmm, cv::Mat compIdxs, cv::Mat mask, cv::Mat img, int dim = 3);
     cv::Mat get_model();
     void cluster_once();

@@ -45,6 +45,10 @@ int main( int argc, char** argv )
 
 
     }
+
+    fgdHmm.normalize_weights();
+    bgdHmm.normalize_weights();
+
     while( fgdHmm.components.size() > 5)
     {
         fgdHmm.cluster_once();

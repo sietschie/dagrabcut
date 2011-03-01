@@ -248,6 +248,19 @@ cv::Mat HMM::get_model() {
     return model;
 }
 
+void HMM::normalize_weights() {
+    double sum = 0.0;
+    for(int i=0;i<components.size();i++)
+    {
+        sum += components[i]->weight;
+    }
+
+    for(int i=0;i<components.size();i++)
+    {
+        components[i]->weight /= sum;
+    }
+}
+
 double HMM::operator()( const Vec3d color ) const
 {
     double res = 0;
