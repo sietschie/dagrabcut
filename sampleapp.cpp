@@ -1,6 +1,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "grabcut.hpp"
+#include "hmm.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -84,10 +85,12 @@ void GCApplication::showImage() const
 int GCApplication::nextIter()
 {
     isInitialized = true;
-    int max_iterations = 1;
+    int max_iterations = 2;
     Rect rect;
 
+    cout << "begin grabcut" << endl;
     cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
+    cout << "end grabcut" << endl;
 
     iterCount += max_iterations;
 
@@ -104,86 +107,28 @@ int main( int argc, char** argv )
         return 1;
     }
 
-    vector<Vec3f> bgdSamples, fgdSamples;
-
-    for(int i=1; i<argc-1; i++)
+    string hmmfilename = argv[1];
+    cout << "Reading " << hmmfilename << "..." << endl;
+    if( hmmfilename.empty() )
     {
-        string filename = argv[i];
-        
-        cout << "Reading " << filename << "..." << endl;
-
-        if( filename.empty() )
-        {
-        	cout << "\nDurn, couldn't read in " << argv[i] << endl;
-            return 1;
-        }
-        Mat image = imread( filename, 1 );
-        if( image.empty() )
-        {
-            cout << "\n Durn, couldn't read image filename " << filename << endl;
-        	return 1;
-        }
-        
-        string mask_filename = filename;
-        mask_filename.append(".mask.yml");
-
-        FileStorage fs(mask_filename, FileStorage::READ);
-        Mat mask; fs["mask"] >> mask;
-
-        Point p;
-        for( p.y = 0; p.y < image.rows; p.y++ )
-        {
-            for( p.x = 0; p.x < image.cols; p.x++ )
-            {
-                if( mask.at<uchar>(p) == GC_BGD || mask.at<uchar>(p) == GC_PR_BGD )
-                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-                else // GC_FGD | GC_PR_FGD
-                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-            }
-        }
-
+    	cout << "\nDurn, couldn't read in " << argv[1] << endl;
+        return 1;
     }
 
-    cout << "starting k-Means..." << endl;
+    HMM fgdHmm, bgdHmm;
+    FileStorage fs(hmmfilename, FileStorage::READ);
+    readHMM(fs["fgdHmm"], fgdHmm);
+    readHMM(fs["bgdHmm"], bgdHmm);
+    fs.release();
 
-    const int kMeansItCount = 10;
-    const int kMeansType = KMEANS_PP_CENTERS;
 
-    Mat bgdLabels, fgdLabels;
-    CV_Assert( !bgdSamples.empty() && !fgdSamples.empty() );
-    Mat _bgdSamples( (int)bgdSamples.size(), 3, CV_32FC1, &bgdSamples[0][0] );
-    kmeans( _bgdSamples, GMM::componentsCount, bgdLabels,
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
-    Mat _fgdSamples( (int)fgdSamples.size(), 3, CV_32FC1, &fgdSamples[0][0] );
-    kmeans( _fgdSamples, GMM::componentsCount, fgdLabels,
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
-
-    cout << "start learning GMM..." << endl;
-    
-    Mat bgdModel, fgdModel;
-    GMM bgdGMM(bgdModel), fgdGMM(fgdModel);
-
-    bgdGMM.initLearning();
-    for( int i = 0; i < (int)bgdSamples.size(); i++ )
-        bgdGMM.addSample( bgdLabels.at<int>(i,0), bgdSamples[i] );
-    bgdGMM.endLearning();
-
-    fgdGMM.initLearning();
-    for( int i = 0; i < (int)fgdSamples.size(); i++ )
-        fgdGMM.addSample( fgdLabels.at<int>(i,0), fgdSamples[i] );
-    fgdGMM.endLearning();
-
-    cout << "finished learning GMM..." << endl;
-
-    help();
-
-    string filename = argv[argc-1];
+    string filename = argv[2];
     
     cout << "Reading " << filename << "..." << endl;
 
     if( filename.empty() )
     {
-    	cout << "\nDurn, couldn't read in " << argv[argc-1] << endl;
+    	cout << "\nDurn, couldn't read in " << argv[2] << endl;
         return 1;
     }
     Mat image = imread( filename, 1 );
@@ -192,10 +137,18 @@ int main( int argc, char** argv )
         cout << "\n Durn, couldn't read image filename " << filename << endl;
     	return 1;
     }
+    
+    cout << "finished reading HMM from file..." << endl;
 
+    help();
 
     const string winName = "image";
     cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
+
+    Mat bgdModel = bgdHmm.get_model();
+    Mat fgdModel = fgdHmm.get_model();
+
+    cout << "fgdModel: " << fgdModel << endl;
 
     gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
     gcapp.showImage();
@@ -211,12 +164,12 @@ int main( int argc, char** argv )
         cout << iterCount << ">" << endl;
     }
 
-    char ymlfilename[200];
+//    char ymlfilename[200];
 
-    sprintf(ymlfilename, "%s.mask.yml", argv[1]); //TODO: dafuer iostreams benutzen?
+//    sprintf(ymlfilename, "%s.mask.yml", argv[1]); //TODO: dafuer iostreams benutzen?
 
-    FileStorage fs(ymlfilename, FileStorage::WRITE);
-    fs << "mask" << gcapp.mask;
+//    FileStorage fs(ymlfilename, FileStorage::WRITE);
+//    fs << "mask" << gcapp.mask;
 
     cvWaitKey(0);
 

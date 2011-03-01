@@ -3,18 +3,8 @@
 
 //#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
+#include "gaussian.hpp"
 #include <vector>
-
-class Gaussian {
-public:
-    cv::Mat mean;
-    cv::Mat cov;
-    double KLdiv(Gaussian& g2);
-    double KLsym(Gaussian& g2);
-    Gaussian();
-    void compute_from_samples(std::vector<cv::Vec3b> samples);
-    ~Gaussian();
-};
 
 class HMM_Component{
 public:
@@ -33,6 +23,7 @@ public:
     std::vector<HMM_Component*> components;
     //void normalize_weights();
     void add_model(cv::Mat gmm, cv::Mat compIdxs, cv::Mat mask, cv::Mat img, int dim = 3);
+    cv::Mat get_model();
     void cluster_once();
     ~HMM();
     double operator()( const cv::Vec3d color ) const;
