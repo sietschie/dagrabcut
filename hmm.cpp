@@ -349,7 +349,7 @@ double Gaussian::KLsym(Gaussian &g2) {
     Mat cov2_inv = g2.cov.inv();
 
     double summand1 = Mat(mean_diff_transposed * (cov1_inv + cov2_inv) * mean_diff).at<double>(0,0);
-    double summand2 = trace( cov1_inv * g2.cov + cov * g2.cov )[0];
+    double summand2 = trace( cov1_inv * g2.cov + cov * cov2_inv )[0];
 
 //    std::cout << "mean_diff: " << mean_diff << "  cov1_inv: " << cov1_inv << "  cov2_inv: " << cov2_inv << std::endl;
 //    std::cout << "summand1: " << summand1 << "  summand2: " << summand2 << "  sum: " << summand1 + summand2 << std::endl;
