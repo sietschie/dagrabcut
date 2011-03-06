@@ -11,10 +11,10 @@ using namespace cv;
 void help()
 {
     cout << "Call:\n"
-    		"./grabcut <image_name> <mask_name>\n"
-        "\nHot keys: \n"
-        "\tESC - quit the program\n"
-        "\tn - next iteration\n" << endl;
+    		"./grabcut <input_image_name1> <input_image_name2>... <image_name>\n"
+			"reads input_images and input_image_names.mask.yml, generates\n"
+			"GMM of the combined images, uses this to initialize grabcut on image_name\n"
+        << endl;
 }
 
 void getBinMask( const Mat& comMask, Mat& binMask )
@@ -213,7 +213,7 @@ int main( int argc, char** argv )
 
     char ymlfilename[200];
 
-    sprintf(ymlfilename, "%s.mask.yml", argv[1]); //TODO: dafuer iostreams benutzen?
+    sprintf(ymlfilename, "%s.naive-mask.yml", argv[1]); //TODO: dafuer iostreams benutzen?
 
     FileStorage fs(ymlfilename, FileStorage::WRITE);
     fs << "mask" << gcapp.mask;
