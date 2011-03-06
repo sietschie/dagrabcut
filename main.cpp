@@ -12,8 +12,10 @@ int main( int argc, char** argv )
 
 
     HMM fgdHmm, bgdHmm;
+    vector<HMM> fgdHmms, bgdHmms;
     for(int i=1; i<argc-1; i++)
     {
+        HMM cur_fgdHmm, cur_bgdHmm;
         string imagename = argv[i];
         
         std::cout << "Reading " << imagename << "..." << std::endl;
@@ -39,12 +41,19 @@ int main( int argc, char** argv )
         Mat bgdModel; fs["bgdModel"] >> bgdModel;
         Mat fgdModel; fs["fgdModel"] >> fgdModel;
 
-        fgdHmm.add_model(fgdModel, compIdxs, mask & 1, image);
-        bgdHmm.add_model(bgdModel, compIdxs, 1 - (mask & 1), image);
+        cur_fgdHmm.add_model(fgdModel, compIdxs, mask & 1, image);
+        cur_bgdHmm.add_model(bgdModel, compIdxs, 1 - (mask & 1), image);
 
+        fgdHmms.push_back(cur_fgdHmm);
+        bgdHmms.push_back(cur_bgdHmm);
 
 
     }
+
+    for(int i=0;i<fgdHmms.size();i++)
+        fgdHmm.add_model(fgdHmms[i]);
+    for(int i=0;i<bgdHmms.size();i++)
+        bgdHmm.add_model(bgdHmms[i]);
 
     cout << "KLdiv: " << fgdHmm.KLdiv(bgdHmm) << endl;
     cout << "KLdiv: " << bgdHmm.KLdiv(fgdHmm) << endl;
@@ -69,6 +78,9 @@ int main( int argc, char** argv )
     fs2 << "fgdHmm" << fgdHmm;
     fs2 << "bgdHmm" << bgdHmm;
     fs2.release();
+
+    fgdHmm.free_components();
+    bgdHmm.free_components();
 
 /*    HMM testHmm;
     FileStorage fs3("test.yml", FileStorage::READ);

@@ -170,6 +170,11 @@ void HMM::cluster_once()
 
 }
 
+void HMM::add_model(HMM &model)
+{
+    components.insert(components.end(), model.components.begin(), model.components.end());
+}
+
 void HMM::add_model(Mat model, Mat compIdxs, Mat mask, Mat img, int dim) {
     int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
 
@@ -335,13 +340,17 @@ double HMM::operator()( int ci, const Vec3d color ) const
 }
 
 
-HMM::~HMM() {
+void HMM::free_components()
+{
     vector<HMM_Component*>::iterator itr;
 
     for(itr=components.begin();itr!=components.end();itr++)
     {
         delete *itr;
     }
+}
+
+HMM::~HMM() {
 }
 
 vector<cv::Vec3b> HMM_Component::get_all_samples(){
