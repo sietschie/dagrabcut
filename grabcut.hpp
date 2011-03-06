@@ -22,7 +22,6 @@ class GMM
 public:
     static const int dim = 3;
     
-    GMM( int _componentsCount = 5);
     GMM( Mat& _model, int _componensCount = 5);
     double operator()( const Vec3d color ) const;
     double operator()( int ci, const Vec3d color ) const;
@@ -32,12 +31,15 @@ public:
     void addSample( int ci, const Vec3d color );
     void endLearning();
     Mat getModel();
+    int getComponentsCount();
 
 private:
+    Mat model;
     int componentsCount;
     std::vector<GMM_Component*> components;
     void calcInverseCovAndDeterm( int ci );
     std::vector<std::vector<cv::Vec3b> > samples;
+    Mat updateModel();
 };
 
 #endif /* _GRABCUT_H_ */

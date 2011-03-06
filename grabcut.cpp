@@ -103,16 +103,35 @@ GMM::GMM( Mat& _model, int _componentsCount )
     }
 }
 
+int GMM::getComponentsCount()
+{
+    return components.size();
+}
+
 Mat GMM::getModel()
 {
-    int modelSize = (dim+1) * dim + 1;
-    Mat model = Mat(modelSize, components.size(), CV_64FC1);
-    for(int i=0;i<components.size();i++)
+    return model;
+}
+
+Mat GMM::updateModel()
+{
+    for(int i=0;i<componentsCount;i++)
     {
-        for(int j=0;j<GMM::dim; j++)
+        int c=0;
+        for(int j=0; j < 3; j++)
         {
-            model.at<double>(i, j) = 1;
+            double value = components[i]->gauss.mean.at<double>(j,0);
+            model.at<double>(c,i) = value;
+            c++;
         }
+
+        for(int j=0;j<3;j++)
+        for(int k=0;k<3;k++)
+        {
+            model.at<double>(c,i) = components[i]->gauss.cov.at<double>(j,k);
+            c++;
+        }       
+        model.at<double>(c,i) = components[i]->weight;
     }
     return model;
 }
@@ -199,10 +218,16 @@ void GMM::addSample( int ci, const Vec3d color )
 
 void GMM::endLearning()
 {
+    int numSamples = 0;
+    for(int i=0;i<samples.size();i++)
+        numSamples += samples[i].size();
+
     for(int i=0;i<samples.size();i++)
     {
         components[i]->gauss.compute_from_samples(samples[i]);
+        components[i]->weight = samples[i].size() / (double) numSamples;
     }
+    updateModel();
 }
 
 /*
