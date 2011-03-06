@@ -12,10 +12,9 @@ using namespace cv;
 void help()
 {
     cout << "Call:\n"
-    		"./grabcut <image_name> <mask_name>\n"
-        "\nHot keys: \n"
-        "\tESC - quit the program\n"
-        "\tn - next iteration\n" << endl;
+    		"./grabcut <image_name> <generate_hmm-outputfile>\n"
+			"runs grabcut on <image_name> using the supplied hmm as initialisation"
+         << endl;
 }
 
 void getBinMask( const Mat& comMask, Mat& binMask )

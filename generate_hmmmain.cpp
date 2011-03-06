@@ -7,6 +7,16 @@
 using namespace cv;
 using namespace std;
 
+void help()
+{
+	    cout << "Call:\n"
+	            "./generate_hmm.bin <image_name1> <image_name2>...  <outputfile_name>\n"
+				"opens image_names.grabcut-output.yml, reads model,\n"
+				"generates HMM, outputs HMM to outputfile_name\n"
+	         << endl;
+}
+
+
 void print_mean_variance(vector<double> list)
 {
 	double sum = 0;
@@ -32,6 +42,11 @@ void print_mean_variance(vector<double> list)
 
 int main( int argc, char** argv )
 {
+	if(argc < 3)
+	{
+		help();
+		return 1;
+	}
 
 
     HMM fgdHmm, bgdHmm;
