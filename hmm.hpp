@@ -30,6 +30,7 @@ public:
     double operator()( const cv::Vec3d color ) const;
     double operator()( int ci, const cv::Vec3d color ) const;
     double KLdiv(const HMM& rhs);
+    double KLsym(HMM& rhs);
     void free_components();
 
 };

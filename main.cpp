@@ -7,12 +7,37 @@
 using namespace cv;
 using namespace std;
 
+void print_mean_variance(vector<double> list)
+{
+	double sum = 0;
+	vector<double>::iterator itr;
+	for(itr = list.begin(); itr != list.end(); itr++)
+	{
+		sum += *itr;
+	}
+	double mean = sum / list.size();
+
+	double sum_squaredmeandiff = 0;
+
+	for(itr = list.begin(); itr != list.end(); itr++)
+	{
+		double meandiff = *itr - mean;
+		sum_squaredmeandiff += meandiff * meandiff;
+	}
+	double variance = sum_squaredmeandiff / list.size();
+
+	cout << "Mean: " << mean << "   Variance: " << variance << endl;
+
+}
+
 int main( int argc, char** argv )
 {
 
 
     HMM fgdHmm, bgdHmm;
     vector<HMM> fgdHmms, bgdHmms;
+
+
     for(int i=1; i<argc-1; i++)
     {
         HMM cur_fgdHmm, cur_bgdHmm;
@@ -46,9 +71,35 @@ int main( int argc, char** argv )
 
         fgdHmms.push_back(cur_fgdHmm);
         bgdHmms.push_back(cur_bgdHmm);
-
-
     }
+    
+    vector<double> fgdDivs;
+    for(int i=0;i<fgdHmms.size();i++)
+    for(int j=i+1;i<fgdHmms.size();i++)
+    {
+        fgdDivs.push_back(fgdHmms[i].KLsym(fgdHmms[j]));
+    }
+	cout << "fgdDivs:  ";
+	print_mean_variance(fgdDivs);
+
+    vector<double> bgdDivs;
+    for(int i=0;i<bgdHmms.size();i++)
+    for(int j=i+1;i<bgdHmms.size();i++)
+    {
+        bgdDivs.push_back(bgdHmms[i].KLsym(bgdHmms[j]));
+    }
+	cout << "bgdDivs:  ";
+	print_mean_variance(bgdDivs);
+
+    vector<double> betweenDivs;
+    for(int i=0;i<bgdHmms.size();i++)
+    for(int j=0;i<fgdHmms.size();i++)
+    {
+        betweenDivs.push_back(bgdHmms[i].KLsym(bgdHmms[j]));
+    }
+	cout << "betweenDivs:  ";
+	print_mean_variance(betweenDivs);
+
 
     for(int i=0;i<fgdHmms.size();i++)
         fgdHmm.add_model(fgdHmms[i]);

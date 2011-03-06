@@ -253,6 +253,11 @@ cv::Mat HMM::get_model() {
     return model;
 }
 
+double HMM::KLsym(HMM& rhs)
+{
+    return KLdiv(rhs) + rhs.KLdiv(*this);
+}
+
 double HMM::KLdiv(const HMM& rhs)
 {
     vector<int> mapping(components.size());
