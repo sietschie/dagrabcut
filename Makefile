@@ -1,14 +1,20 @@
+program_NAME := generate_hmm.bin
+program_OBJS := hmm.o generate_hmmmain.o gaussian.o
+
+program2_NAME := grabcut.bin
+program2_OBJS := grabcut.o grabcutmain.o hmm.o gaussian.o
+
 CC=clang++
-CFLAGS= -g `pkg-config opencv --cflags`
-LDFLAGS= `pkg-config opencv --libs`
+CFLAGS+= -g `pkg-config opencv --cflags`
+LDFLAGS+= `pkg-config opencv --libs`
 
-all: generate_hmm.bin grabcut.bin
+all: $(program_NAME) $(program2_NAME)
 
-generate_hmm.bin: hmm.o generate_hmmmain.o gaussian.o
-	$(CC) $(LDFLAGS) $^ -o generate_hmm.bin
+$(program_NAME): $(program_OBJS)
+	$(CC) $(LDFLAGS) $^ -o $(program_NAME)
 
-grabcut.bin: grabcut.o grabcutmain.o hmm.o gaussian.o
-	$(CC) $(LDFLAGS) $^ -o grabcut.bin
+$(program2_NAME): $(program2_OBJS)
+	$(CC) $(LDFLAGS) $^ -o $(program2_NAME)
 
 .cpp.o:
 	$(CC) $(CFLAGS) -c $<
