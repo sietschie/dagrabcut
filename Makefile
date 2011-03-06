@@ -4,10 +4,10 @@ LDFLAGS= `pkg-config opencv --libs`
 
 all: generate_hmm.bin grabcut.bin
 
-generate_hmm.bin: hmm.o main.o gaussian.o
+generate_hmm.bin: hmm.o generate_hmmmain.o gaussian.o
 	$(CC) $(LDFLAGS) $^ -o generate_hmm.bin
 
-grabcut.bin: grabcut.o sampleapp.o hmm.o gaussian.o
+grabcut.bin: grabcut.o grabcutmain.o hmm.o gaussian.o
 	$(CC) $(LDFLAGS) $^ -o grabcut.bin
 
 .cpp.o:
