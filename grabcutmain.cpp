@@ -84,10 +84,12 @@ void GCApplication::showImage() const
 int GCApplication::nextIter()
 {
     isInitialized = true;
-    int max_iterations = 1;
+    int max_iterations = 2;
     Rect rect;
 
+    cout << "begin grabcut" << endl;
     cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
+    cout << "end grabcut" << endl;
 
     iterCount += max_iterations;
 
@@ -114,14 +116,14 @@ int main( int argc, char** argv )
 
         if( filename.empty() )
         {
-        	cout << "\nDurn, couldn't read in " << argv[i] << endl;
+            cout << "\nDurn, couldn't read in " << argv[i] << endl;
             return 1;
         }
         Mat image = imread( filename, 1 );
         if( image.empty() )
         {
             cout << "\n Durn, couldn't read image filename " << filename << endl;
-        	return 1;
+            return 1;
         }
         
         string mask_filename = filename;
@@ -148,14 +150,15 @@ int main( int argc, char** argv )
 
     const int kMeansItCount = 10;
     const int kMeansType = KMEANS_PP_CENTERS;
+    const int componentsCount = 5;
 
     Mat bgdLabels, fgdLabels;
     CV_Assert( !bgdSamples.empty() && !fgdSamples.empty() );
     Mat _bgdSamples( (int)bgdSamples.size(), 3, CV_32FC1, &bgdSamples[0][0] );
-    kmeans( _bgdSamples, GMM::componentsCount, bgdLabels,
+    kmeans( _bgdSamples, componentsCount, bgdLabels,
             TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
     Mat _fgdSamples( (int)fgdSamples.size(), 3, CV_32FC1, &fgdSamples[0][0] );
-    kmeans( _fgdSamples, GMM::componentsCount, fgdLabels,
+    kmeans( _fgdSamples, componentsCount, fgdLabels,
             TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
 
     cout << "start learning GMM..." << endl;
