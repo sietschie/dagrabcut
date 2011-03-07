@@ -1,7 +1,7 @@
 program_NAME := prog.bin
-program_OBJS := grabcut.o sampleapp.o
+program_OBJS := grabcut.o grabcutmain.o gaussian.o
 
-CC=g++
+CC=clang++
 CFLAGS+= -g `pkg-config opencv --cflags`
 LDFLAGS+= `pkg-config opencv --libs`
 
