@@ -221,7 +221,6 @@ void GMM::endLearning()
     int numSamples = 0;
     for(int i=0;i<samples.size();i++)
     {
-        cout << "samples["<<i<<"].size() = " << samples[i].size() << endl;
         numSamples += samples[i].size();
     }
 
@@ -229,7 +228,6 @@ void GMM::endLearning()
     {
         components[i]->gauss.compute_from_samples(samples[i]);
         components[i]->weight = samples[i].size() / (double) numSamples;
-        cout << "weight["<<i<<"] = " << components[i]->weight << endl;
 
     }
     updateModel();
