@@ -12,9 +12,9 @@ using namespace cv;
 void help()
 {
     cout << "Call:\n"
-    		"./grabcut <image_name> <generate_hmm-outputfile>\n"
-			"runs grabcut on <image_name> using the supplied hmm as initialisation"
-         << endl;
+    		"./grabcut <input_model> <input_image> <class_number> <output_name>\n"
+			"reads model and image, generates Segmentation for class_number\n"
+        << endl;
 }
 
 void getBinMask( const Mat& comMask, Mat& binMask )
@@ -31,7 +31,7 @@ class GCApplication
 public:
     void setImageAndWinName( const Mat& _image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel );
     void showImage() const;
-    int nextIter();
+    int nextIter(int max_iterations);
     int getIterCount() const { return iterCount; }
     Mat mask;
 private:
@@ -81,15 +81,12 @@ void GCApplication::showImage() const
     imshow( *winName, res );
 }
 
-int GCApplication::nextIter()
+int GCApplication::nextIter(int max_iterations = 2)
 {
     isInitialized = true;
-    int max_iterations = 2;
     Rect rect;
 
-    cout << "begin grabcut" << endl;
     cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
-    cout << "end grabcut" << endl;
 
     iterCount += max_iterations;
 
@@ -97,6 +94,69 @@ int GCApplication::nextIter()
 }
 
 GCApplication gcapp;
+
+void readImageAndMask(string filename, Mat& image, Mat& mask)
+{
+    cout << "Reading " << filename << "..." << endl;
+
+    if( filename.empty() )
+    {
+        cout << "\nDurn, couldn't read in " << filename << endl;
+        return;
+    }
+    image = imread( filename, 1 );
+    if( image.empty() )
+    {
+        cout << "\n Durn, couldn't read image filename " << filename << endl;
+        return;
+    }
+    
+    string mask_filename = filename;
+    mask_filename.append(".yml");
+
+    FileStorage fs(mask_filename, FileStorage::READ);
+    fs["mask"] >> mask;
+}
+
+void compareMasks(const Mat &gt,const Mat& segm, int class_number, int& true_positive, int& true_negative, int& false_positive, int& false_negative, int& unknown)
+{
+    true_positive = 0;
+    true_negative = 0;
+    false_positive = 0;
+    false_negative = 0;
+    unknown = 0;
+
+    assert(gt.rows == segm.rows && gt.cols == segm.cols);
+
+    Point p;
+    for( p.y = 0; p.y < gt.rows; p.y++ )
+    {
+        for( p.x = 0; p.x < gt.cols; p.x++ )
+        {
+            if(gt.at<uchar>(p) == class_number)
+            {
+                if(segm.at<uchar>(p) == GC_FGD | segm.at<uchar>(p) == GC_PR_FGD)
+                {
+                    true_positive++;
+                } else {
+                    false_negative++;
+                }
+            } else if (gt.at<uchar>(p) == 255) {
+                unknown++;
+            } else {
+                if(segm.at<uchar>(p) == GC_FGD | segm.at<uchar>(p) == GC_PR_FGD)
+                {
+                    false_positive++;
+                } else {
+                    true_negative++;
+                }
+            }
+        }
+    }
+    assert(gt.rows * gt.cols == true_positive + true_negative + false_positive + false_negative + unknown);
+
+}
+
 
 int main( int argc, char** argv )
 {
@@ -106,39 +166,20 @@ int main( int argc, char** argv )
         return 1;
     }
 
-    string hmmfilename = argv[1];
-    cout << "Reading " << hmmfilename << "..." << endl;
-    if( hmmfilename.empty() )
-    {
-    	cout << "\nDurn, couldn't read in " << argv[1] << endl;
-        return 1;
-    }
+    string fn_model = argv[1];
+    string fn_image = argv[2];
+	int class_number = atoi(argv[3]);
+    string fn_output = argv[4];
 
     HMM fgdHmm, bgdHmm;
-    FileStorage fs(hmmfilename, FileStorage::READ);
+    FileStorage fs(fn_model, FileStorage::READ);
     readHMM(fs["fgdHmm"], fgdHmm);
     readHMM(fs["bgdHmm"], bgdHmm);
     fs.release();
 
-
-    string filename = argv[2];
+    Mat image, mask;
+    readImageAndMask(fn_image, image, mask);
     
-    cout << "Reading " << filename << "..." << endl;
-
-    if( filename.empty() )
-    {
-    	cout << "\nDurn, couldn't read in " << argv[2] << endl;
-        return 1;
-    }
-    Mat image = imread( filename, 1 );
-    if( image.empty() )
-    {
-        cout << "\n Durn, couldn't read image filename " << filename << endl;
-    	return 1;
-    }
-    
-    cout << "finished reading HMM from file..." << endl;
-
     help();
 
     const string winName = "image";
@@ -152,23 +193,32 @@ int main( int argc, char** argv )
     gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
     gcapp.showImage();
 
-    cvWaitKey(0);
+    cvWaitKey(1000);
 
     int iterCount = gcapp.getIterCount();
     cout << "<" << iterCount << "... ";
-    int newIterCount = gcapp.nextIter();
+    int newIterCount = gcapp.nextIter(10);
     if( newIterCount > iterCount )
     {
         gcapp.showImage();
-        cout << iterCount << ">" << endl;
+        cout << newIterCount << ">" << endl;
     }
 
-//    char ymlfilename[200];
+    FileStorage fs2(fn_output, FileStorage::WRITE);
+    fs2 << "mask" << gcapp.mask;
+	fs2 << "fgdModel" << fgdModel;
+	fs2 << "bgdModel" << bgdModel;
 
-//    sprintf(ymlfilename, "%s.mask.yml", argv[1]); //TODO: dafuer iostreams benutzen?
+    int tp, tn, fp, fn, unknown;
+    compareMasks(mask, gcapp.mask, class_number, tp, tn, fp, fn, unknown);
+    cout << "true positive: " << tp << ", true negative: " << tn << ", false positive: " << fp << ", false negative: " << fn << ", unknown: " << unknown << endl;
 
-//    FileStorage fs(ymlfilename, FileStorage::WRITE);
-//    fs << "mask" << gcapp.mask;
+    double fgd_rate = tp / (double) (tp + fn);
+    double bgd_rate = tn / (double) (tn + fp);
+    double joint_rate = (fgd_rate + bgd_rate) / 2;
+
+    cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate << endl;
+
 
     cvWaitKey(0);
 

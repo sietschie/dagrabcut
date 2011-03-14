@@ -175,7 +175,81 @@ void HMM::add_model(HMM &model)
     components.insert(components.end(), model.components.begin(), model.components.end());
 }
 
-void HMM::add_model(Mat model, Mat compIdxs, Mat mask, Mat img, int dim) {
+void HMM::add_model(Mat &model, const Mat &mask, const Mat &img, int dim)
+{
+    int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
+
+    int componentsCount = model.cols;
+
+    //std::cout << "componentsCount: " << componentsCount << std::endl;
+
+    double *coefs = model.ptr<double>(0);
+    double *mean = coefs + componentsCount;
+    double *cov = mean + dim*componentsCount;
+
+    HMM_Component *hmmc;
+
+    for(int i = 0; i<componentsCount;i++)
+    {
+        Gaussian gauss;
+        int c=0;
+        gauss.mean = Mat(3,1, CV_64FC1);
+        for(int j=0; j < 3; j++)
+        {
+            double value = model.at<double>(c,i);
+            gauss.mean.at<double>(j,0) = value;
+            c++;
+        }
+
+        gauss.cov = Mat(3,3, CV_64FC1);
+        for(int j=0;j<3;j++)
+        for(int k=0;k<3;k++)
+        {
+            gauss.cov.at<double>(j,k) = model.at<double>(c,i);
+            c++;
+        }       
+
+        hmmc = new HMM_Component();
+        hmmc->gauss = gauss;
+        hmmc->weight = model.at<double>(c,i);
+
+        components.push_back(hmmc);
+    }
+
+    Point p;
+    for( p.y = 0; p.y < mask.rows; p.y++ )
+    {
+        for( p.x = 0; p.x < mask.cols; p.x++ )
+        {
+            if( mask.at<uchar>(p) == 1 )
+            {
+                int c = whichComponent( img.at<Vec3b>(p) );
+                components[c]->samples.push_back(img.at<Vec3b>(p));
+            }
+        }
+    }
+}
+
+int HMM::whichComponent( const Vec3d color ) const
+{
+    int k = 0;
+    double max = 0;
+
+    for( int ci = 0; ci < components.size(); ci++ )
+    {
+		double p = (*this)( ci, color );
+        if( p > max )
+        {
+            k = ci;
+            max = p;
+        }
+    }
+    return k;
+}
+
+
+
+void HMM::add_model( Mat &model, const Mat &compIdxs, const Mat &mask, const Mat &img, int dim) {
     int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
 
     int componentsCount = model.cols / modelsize;

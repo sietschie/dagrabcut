@@ -6,6 +6,8 @@
 #include "gaussian.hpp"
 #include <vector>
 
+//TODO: think about making some stuff private
+
 class HMM_Component{
 public:
     HMM_Component *left_child, *right_child;
@@ -23,12 +25,15 @@ public:
     std::vector<HMM_Component*> components;
     void normalize_weights();
     void add_model(HMM &hmm);
-    void add_model(cv::Mat gmm, cv::Mat compIdxs, cv::Mat mask, cv::Mat img, int dim = 3);
+    void add_model(cv::Mat& gmm, const cv::Mat& compIdxs, const cv::Mat& mask, const cv::Mat& img, int dim = 3);
+    void add_model(cv::Mat& gmm, const cv::Mat& mask, const cv::Mat& img, int dim = 3);
     cv::Mat get_model();
     void cluster_once();
     ~HMM();
     double operator()( const cv::Vec3d color ) const;
     double operator()( int ci, const cv::Vec3d color ) const;
+    int whichComponent( const cv::Vec3d color ) const;
+
     double KLdiv(const HMM& rhs);
     double KLsym(HMM& rhs);
     void free_components();

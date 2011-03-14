@@ -64,7 +64,6 @@ Carsten Rother, Vladimir Kolmogorov, Andrew Blake.
 
 GMM::GMM( Mat& _model, int _componentsCount )
 {
-    cout << "enter GMM constructor.. " << endl;
     componentsCount = _componentsCount;
     const int modelSize = 3/*mean*/ + 9/*covariance*/ + 1/*component weight*/;
     if( _model.empty() )
@@ -75,7 +74,7 @@ GMM::GMM( Mat& _model, int _componentsCount )
     else if( (_model.type() != CV_64FC1) || (_model.rows != modelSize) || (_model.cols != componentsCount) )
         CV_Error( CV_StsBadArg, "_model must have CV_64FC1 type, rows == modelSize and cols == componentsCount" );
 
-    Mat model = _model;
+    model = _model;
 
     for(int i=0;i<componentsCount;i++)
     {
@@ -220,12 +219,15 @@ void GMM::endLearning()
 {
     int numSamples = 0;
     for(int i=0;i<samples.size();i++)
+    {
         numSamples += samples[i].size();
+    }
 
     for(int i=0;i<samples.size();i++)
     {
         components[i]->gauss.compute_from_samples(samples[i]);
         components[i]->weight = samples[i].size() / (double) numSamples;
+
     }
     updateModel();
 }
@@ -596,7 +598,7 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
         learnGMMs( img, mask, compIdxs, bgdGMM, fgdGMM );
         constructGCGraph(img, mask, bgdGMM, fgdGMM, lambda, leftW, upleftW, upW, uprightW, graph );
         current_flow = estimateSegmentation( graph, mask );
-        cout << "diff flow:" << abs(last_flow - current_flow) << endl;  
+        cout << " diff flow:" << abs(last_flow - current_flow) << " " << flush;  
 
         if( abs(last_flow - current_flow) < eps )
             break;
