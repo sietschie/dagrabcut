@@ -31,7 +31,7 @@ class GCApplication
 public:
     void setImageAndWinName( const Mat& _image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel );
     void showImage() const;
-    int nextIter();
+    int nextIter(int max_iterations);
     int getIterCount() const { return iterCount; }
     Mat mask;
 private:
@@ -81,15 +81,12 @@ void GCApplication::showImage() const
     imshow( *winName, res );
 }
 
-int GCApplication::nextIter()
+int GCApplication::nextIter(int max_iterations = 2)
 {
     isInitialized = true;
-    int max_iterations = 2;
     Rect rect;
 
-    cout << "begin grabcut" << endl;
     cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
-    cout << "end grabcut" << endl;
 
     iterCount += max_iterations;
 
@@ -119,6 +116,45 @@ void readImageAndMask(string filename, Mat& image, Mat& mask)
 
     FileStorage fs(mask_filename, FileStorage::READ);
     fs["mask"] >> mask;
+}
+
+void compareMasks(const Mat &gt,const Mat& segm, int class_number, int& true_positive, int& true_negative, int& false_positive, int& false_negative, int& unknown)
+{
+    true_positive = 0;
+    true_negative = 0;
+    false_positive = 0;
+    false_negative = 0;
+    unknown = 0;
+
+    assert(gt.rows == segm.rows && gt.cols == segm.cols);
+
+    Point p;
+    for( p.y = 0; p.y < gt.rows; p.y++ )
+    {
+        for( p.x = 0; p.x < gt.cols; p.x++ )
+        {
+            if(gt.at<uchar>(p) == class_number)
+            {
+                if(segm.at<uchar>(p) == GC_FGD | segm.at<uchar>(p) == GC_PR_FGD)
+                {
+                    true_positive++;
+                } else {
+                    false_negative++;
+                }
+            } else if (gt.at<uchar>(p) == 255) {
+                unknown++;
+            } else {
+                if(segm.at<uchar>(p) == GC_FGD | segm.at<uchar>(p) == GC_PR_FGD)
+                {
+                    false_positive++;
+                } else {
+                    true_negative++;
+                }
+            }
+        }
+    }
+    assert(gt.rows * gt.cols == true_positive + true_negative + false_positive + false_negative + unknown);
+
 }
 
 int main( int argc, char** argv )
@@ -152,21 +188,32 @@ int main( int argc, char** argv )
     gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
     gcapp.showImage();
 
-    cvWaitKey(0);
+    cvWaitKey(1000);
 
     int iterCount = gcapp.getIterCount();
     cout << "<" << iterCount << "... ";
-    int newIterCount = gcapp.nextIter();
+    int newIterCount = gcapp.nextIter(10);
     if( newIterCount > iterCount )
     {
         gcapp.showImage();
-        cout << iterCount << ">" << endl;
+        cout << newIterCount << ">" << endl;
     }
 
     FileStorage fs2(fn_output, FileStorage::WRITE);
     fs2 << "mask" << gcapp.mask;
 	fs2 << "fgdModel" << fgdModel;
 	fs2 << "bgdModel" << bgdModel;
+
+    int tp, tn, fp, fn, unknown;
+    compareMasks(mask, gcapp.mask, class_number, tp, tn, fp, fn, unknown);
+    cout << "true positive: " << tp << ", true negative: " << tn << ", false positive: " << fp << ", false negative: " << fn << ", unknown: " << unknown << endl;
+
+    double fgd_rate = tp / (double) (tp + fn);
+    double bgd_rate = tn / (double) (tn + fp);
+    double joint_rate = (fgd_rate + bgd_rate) / 2;
+
+    cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate << endl;
+
 
     cvWaitKey(0);
 

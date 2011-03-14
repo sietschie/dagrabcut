@@ -64,7 +64,6 @@ Carsten Rother, Vladimir Kolmogorov, Andrew Blake.
 
 GMM::GMM( Mat& _model, int _componentsCount )
 {
-    cout << "enter GMM constructor.. " << endl;
     componentsCount = _componentsCount;
     const int modelSize = 3/*mean*/ + 9/*covariance*/ + 1/*component weight*/;
     if( _model.empty() )
@@ -599,7 +598,7 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
         learnGMMs( img, mask, compIdxs, bgdGMM, fgdGMM );
         constructGCGraph(img, mask, bgdGMM, fgdGMM, lambda, leftW, upleftW, upW, uprightW, graph );
         current_flow = estimateSegmentation( graph, mask );
-        cout << "diff flow:" << abs(last_flow - current_flow) << endl;  
+        cout << " diff flow:" << abs(last_flow - current_flow) << " " << flush;  
 
         if( abs(last_flow - current_flow) < eps )
             break;
