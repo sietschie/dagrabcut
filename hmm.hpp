@@ -3,19 +3,18 @@
 
 //#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
-#include "gaussian.hpp"
+#include "gmm.hpp"
 #include <vector>
 
 //TODO: think about making some stuff private
 
-class HMM_Component{
+class HMM_Component : public GMM_Component{
 public:
     HMM_Component *left_child, *right_child;
     double div;
-    double weight;
-    Gaussian gauss;
     std::vector<cv::Vec3b> samples;
     std::vector<cv::Vec3b> get_all_samples();
+    HMM_Component(cv::Mat component );
     HMM_Component();
     ~HMM_Component();
 };

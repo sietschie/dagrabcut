@@ -179,40 +179,11 @@ void HMM::add_model(Mat &model, const Mat &mask, const Mat &img, int dim)
 {
     int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
 
-    int componentsCount = model.cols;
-
-    //std::cout << "componentsCount: " << componentsCount << std::endl;
-
-    double *coefs = model.ptr<double>(0);
-    double *mean = coefs + componentsCount;
-    double *cov = mean + dim*componentsCount;
-
     HMM_Component *hmmc;
 
-    for(int i = 0; i<componentsCount;i++)
+    for(int i = 0; i<model.cols;i++)
     {
-        Gaussian gauss;
-        int c=0;
-        gauss.mean = Mat(3,1, CV_64FC1);
-        for(int j=0; j < 3; j++)
-        {
-            double value = model.at<double>(c,i);
-            gauss.mean.at<double>(j,0) = value;
-            c++;
-        }
-
-        gauss.cov = Mat(3,3, CV_64FC1);
-        for(int j=0;j<3;j++)
-        for(int k=0;k<3;k++)
-        {
-            gauss.cov.at<double>(j,k) = model.at<double>(c,i);
-            c++;
-        }       
-
-        hmmc = new HMM_Component();
-        hmmc->gauss = gauss;
-        hmmc->weight = model.at<double>(c,i);
-
+        hmmc = new HMM_Component(model.col(i));
         components.push_back(hmmc);
     }
 
@@ -454,6 +425,33 @@ HMM_Component::HMM_Component() {
     left_child = NULL;
     right_child = NULL;
     div = 0;
+}
+
+HMM_Component::HMM_Component(Mat component) {
+    left_child = NULL;
+    right_child = NULL;
+    div = 0;
+
+    int c=0;
+    gauss.mean = Mat(3,1, CV_64FC1);
+    for(int j=0; j < 3; j++)
+    {
+        double value = component.at<double>(c,0);
+        gauss.mean.at<double>(j,0) = value;
+        c++;
+    }
+
+    gauss.cov = Mat(3,3, CV_64FC1);
+    for(int j=0;j<3;j++)
+    for(int k=0;k<3;k++)
+    {
+        gauss.cov.at<double>(j,k) = component.at<double>(c,0);
+        c++;
+    }       
+
+    weight = component.at<double>(c,0);
+
+
 }
 
 HMM_Component::~HMM_Component() {
