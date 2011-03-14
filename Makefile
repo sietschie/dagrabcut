@@ -1,8 +1,8 @@
 program_NAME := learn.bin
-program_OBJS := hmm.o generate_hmmmain.o gaussian.o grabcut.o gmm.o
+program_OBJS := hmm.o learnmain.o gaussian.o grabcut.o gmm.o
 
 program2_NAME := test.bin
-program2_OBJS := grabcut.o grabcutmain.o hmm.o gaussian.o gmm.o
+program2_OBJS := grabcut.o testmain.o hmm.o gaussian.o gmm.o
 
 CC=g++
 CFLAGS+= -g `pkg-config opencv --cflags`

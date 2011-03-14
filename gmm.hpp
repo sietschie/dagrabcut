@@ -11,6 +11,9 @@ class GMM_Component
 public:
     double weight;
     Gaussian gauss;
+    GMM_Component();
+    GMM_Component(cv::Mat component );
+
 };
 
 class GMM

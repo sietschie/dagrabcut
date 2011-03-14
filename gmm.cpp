@@ -219,3 +219,28 @@ void GMM::endLearning()
     }
     updateModel();
 }
+
+GMM_Component::GMM_Component() {}
+
+GMM_Component::GMM_Component(Mat component) {
+    int c=0;
+    gauss.mean = Mat(3,1, CV_64FC1);
+    for(int j=0; j < 3; j++)
+    {
+        double value = component.at<double>(c,0);
+        gauss.mean.at<double>(j,0) = value;
+        c++;
+    }
+
+    gauss.cov = Mat(3,3, CV_64FC1);
+    for(int j=0;j<3;j++)
+    for(int k=0;k<3;k++)
+    {
+        gauss.cov.at<double>(j,k) = component.at<double>(c,0);
+        c++;
+    }       
+
+    weight = component.at<double>(c,0);
+
+
+}

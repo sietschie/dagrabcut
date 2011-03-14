@@ -197,7 +197,7 @@ int main( int argc, char** argv )
 
     int iterCount = gcapp.getIterCount();
     cout << "<" << iterCount << "... ";
-    int newIterCount = gcapp.nextIter(10);
+    int newIterCount = gcapp.nextIter();
     if( newIterCount > iterCount )
     {
         gcapp.showImage();

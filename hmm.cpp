@@ -421,37 +421,16 @@ vector<cv::Vec3b> HMM_Component::get_all_samples(){
     return result;
 }
 
-HMM_Component::HMM_Component() {
+HMM_Component::HMM_Component( Mat Component ) : GMM_Component(Component) {
     left_child = NULL;
     right_child = NULL;
     div = 0;
 }
 
-HMM_Component::HMM_Component(Mat component) {
+HMM_Component::HMM_Component() {
     left_child = NULL;
     right_child = NULL;
     div = 0;
-
-    int c=0;
-    gauss.mean = Mat(3,1, CV_64FC1);
-    for(int j=0; j < 3; j++)
-    {
-        double value = component.at<double>(c,0);
-        gauss.mean.at<double>(j,0) = value;
-        c++;
-    }
-
-    gauss.cov = Mat(3,3, CV_64FC1);
-    for(int j=0;j<3;j++)
-    for(int k=0;k<3;k++)
-    {
-        gauss.cov.at<double>(j,k) = component.at<double>(c,0);
-        c++;
-    }       
-
-    weight = component.at<double>(c,0);
-
-
 }
 
 HMM_Component::~HMM_Component() {
