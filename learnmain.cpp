@@ -4,15 +4,15 @@
 
 #include <iostream>
 #include <stdio.h>
+#include <boost/program_options.hpp>
 
 using namespace std;
 using namespace cv;
+namespace po = boost::program_options;
 
 void help()
 {
-    cout << "Call:\n"
-         "./grabcut <input_image_name1> <input_image_name2>... <class_number> <model_name>\n"
-         "reads input_images and input_image_names.yml, generates\n"
+    cout << "reads input_images and input_image_names.yml, generates\n"
          "GMM of the combined images for class_number\n"
          << endl;
 }
@@ -65,24 +65,54 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model)
 
 int main( int argc, char** argv )
 {
-    if( argc < 3 )
+    po::options_description generic("Generic options");
+    generic.add_options()
+        ("help", "produce help message")
+    ;
+
+    po::options_description hidden("Hidden options");
+    hidden.add_options()
+        ("class-number", po::value<int>()->required(), "the relevant class number")
+        ("model", po::value<string>()->required(), "where to save the created model file")
+        ("images", po::value< vector<string> >()->required(), "the input images")
+    ;
+
+    po::positional_options_description positional;
+    positional.add("model", 1);
+    positional.add("class-number", 1);
+    positional.add("images", -1);
+
+    po::options_description cmdline_options;
+    cmdline_options.add(generic).add(hidden);
+
+    po::options_description visible;
+    visible.add(generic);
+
+    po::variables_map vm;
+ 
+    try {
+        po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(positional).run(), vm);
+        po::notify(vm);
+
+    } catch ( std::exception& e )
     {
-        help();
+        cout << "Usage: ./learn.bin [options] modelfile class-number imagefile1 imagefile2 ...\n";
+        cout << visible << endl;
+        cout << e.what() << "\n";
         return 1;
     }
 
+    vector< string > input_images = vm["images"].as< vector<string> >();
+
     vector<Vec3f> bgdSamples, fgdSamples;
 
-    int class_number = atoi(argv[argc-2]);
+    int class_number = vm["class-number"].as<int>();
 
-    for(int i=1; i<argc-2; i++)
+
+    for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
     {
-        string filename = argv[i];
-
-        cout << "Reading " << filename << "..." << endl;
-
         Mat image, mask;
-        readImageAndMask(filename, image, mask);
+        readImageAndMask(*filename, image, mask);
 
         Point p;
         for( p.y = 0; p.y < image.rows; p.y++ )
@@ -104,7 +134,7 @@ int main( int argc, char** argv )
 
     help();
 
-    FileStorage fs2(argv[argc-1], FileStorage::WRITE);
+    FileStorage fs2(vm["model"].as<string>(), FileStorage::WRITE);
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
 

@@ -7,7 +7,7 @@ program2_OBJS := grabcut.o testmain.o gaussian.o gmm.o
 CC=g++
 
 CFLAGS+= -g `pkg-config opencv --cflags`
-LDFLAGS+= `pkg-config opencv --libs`
+LDFLAGS+= `pkg-config opencv --libs` -lboost_program_options
 
 all: $(program_NAME) $(program2_NAME)
 
