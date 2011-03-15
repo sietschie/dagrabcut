@@ -43,12 +43,12 @@ double Gaussian::KLsym(Gaussian &g2) {
     // (mean2 - mean1)^T (cov1_inv + cov2_inv) (mean2 - mean1) + trace( cov1_inv cov2 + cov1 cov2_inv ) - 2dim
     // from http://www.sciweavers.org/files/docs/2358/icassp_cvd_poster_pdf_4a383d1fb0.pdf
 
-/*    std::cout << "entered KLsym" << std::endl;
-    std::cout << mean << std::endl;
-    std::cout << g2.mean << std::endl;
-    std::cout << cov << std::endl;
-    std::cout << g2.cov << std::endl;
-*/
+    /*    std::cout << "entered KLsym" << std::endl;
+        std::cout << mean << std::endl;
+        std::cout << g2.mean << std::endl;
+        std::cout << cov << std::endl;
+        std::cout << g2.cov << std::endl;
+    */
     Mat mean_diff = g2.mean - mean;
     Mat mean_diff_transposed;
     transpose(mean_diff, mean_diff_transposed);
@@ -61,9 +61,9 @@ double Gaussian::KLsym(Gaussian &g2) {
 
 //    std::cout << "mean_diff: " << mean_diff << "  cov1_inv: " << cov1_inv << "  cov2_inv: " << cov2_inv << std::endl;
 //    std::cout << "summand1: " << summand1 << "  summand2: " << summand2 << "  sum: " << summand1 + summand2 << std::endl;
-    
+
     double klsym = summand1 + summand2 - 2 * cov.cols;
-        
+
     return klsym / 2.0;
 }
 
@@ -75,15 +75,15 @@ void Gaussian::compute_from_samples(vector<cv::Vec3b> samples) {
 
     vector<cv::Vec3b>::iterator itr;
 
-    for(itr=samples.begin(); itr!=samples.end();itr++)
+    for(itr=samples.begin(); itr!=samples.end(); itr++)
     {
         mean.at<double>(0,0) += (*itr)[0];
         mean.at<double>(1,0) += (*itr)[1];
         mean.at<double>(2,0) += (*itr)[2];
 
-        for(int i=0;i<3;i++)
-        for(int j=0;j<3;j++)
-            cov.at<double>(i,j) += (*itr)[i] * (*itr)[j];
+        for(int i=0; i<3; i++)
+            for(int j=0; j<3; j++)
+                cov.at<double>(i,j) += (*itr)[i] * (*itr)[j];
     }
 
     mean = mean / samples.size();
@@ -94,10 +94,10 @@ void Gaussian::compute_from_samples(vector<cv::Vec3b> samples) {
 
     if(samples.size() == 0) //TODO: wie richtig behandeln?
     {
-        for(int i=0;i<3;i++)
+        for(int i=0; i<3; i++)
         {
             mean.at<double>(i,0) = 0.0;
-            for(int j=0;j<3;j++)
+            for(int j=0; j<3; j++)
                 cov.at<double>(i,j) = 0.0;
         }
 

@@ -11,10 +11,10 @@ using namespace cv;
 void help()
 {
     cout << "Call:\n"
-    		"./grabcut <input_model> <input_image> <class_number> <output_name>\n"
-			"reads input_images and input_image_names.yml, generates\n"
-			"GMM of the combined images for class_number\n"
-        << endl;
+         "./grabcut <input_model> <input_image> <class_number> <output_name>\n"
+         "reads input_images and input_image_names.yml, generates\n"
+         "GMM of the combined images for class_number\n"
+         << endl;
 }
 
 void getBinMask( const Mat& comMask, Mat& binMask )
@@ -32,7 +32,9 @@ public:
     void setImageAndWinName( const Mat& _image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel );
     void showImage() const;
     int nextIter(int max_iterations);
-    int getIterCount() const { return iterCount; }
+    int getIterCount() const {
+        return iterCount;
+    }
     Mat mask;
 private:
     const string* winName;
@@ -110,7 +112,7 @@ void readImageAndMask(string filename, Mat& image, Mat& mask)
         cout << "\n Durn, couldn't read image filename " << filename << endl;
         return;
     }
-    
+
     string mask_filename = filename;
     mask_filename.append(".yml");
 
@@ -162,7 +164,7 @@ int main( int argc, char** argv )
 {
     if( argc < 3 )
     {
-    	help();
+        help();
         return 1;
     }
 
@@ -170,9 +172,9 @@ int main( int argc, char** argv )
 
     string fn_model = argv[1];
     string fn_image = argv[2];
-	int class_number = atoi(argv[3]);
+    int class_number = atoi(argv[3]);
     string fn_output = argv[4];
-        
+
     Mat fgdModel, bgdModel;
     FileStorage fs(fn_model, FileStorage::READ);
     fs["fgdModel"] >> fgdModel;
@@ -181,7 +183,7 @@ int main( int argc, char** argv )
 
     Mat image, mask;
     readImageAndMask(fn_image, image, mask);
-    
+
     help();
 
     const string winName = "image";
@@ -203,8 +205,8 @@ int main( int argc, char** argv )
 
     FileStorage fs2(fn_output, FileStorage::WRITE);
     fs2 << "mask" << gcapp.mask;
-	fs2 << "fgdModel" << fgdModel;
-	fs2 << "bgdModel" << bgdModel;
+    fs2 << "fgdModel" << fgdModel;
+    fs2 << "bgdModel" << bgdModel;
 
     int tp, tn, fp, fn, unknown;
     compareMasks(mask, gcapp.mask, class_number, tp, tn, fp, fn, unknown);

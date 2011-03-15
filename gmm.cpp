@@ -64,7 +64,7 @@ GMM::GMM( Mat& _model, int _componentsCount )
 
     model = _model;
 
-    for(int i=0;i<componentsCount;i++)
+    for(int i=0; i<componentsCount; i++)
     {
         Gaussian gauss;
         int c=0;
@@ -77,16 +77,16 @@ GMM::GMM( Mat& _model, int _componentsCount )
         }
 
         gauss.cov = Mat(3,3, CV_64FC1);
-        for(int j=0;j<3;j++)
-        for(int k=0;k<3;k++)
-        {
-            gauss.cov.at<double>(j,k) = model.at<double>(c,i);
-            c++;
-        }       
+        for(int j=0; j<3; j++)
+            for(int k=0; k<3; k++)
+            {
+                gauss.cov.at<double>(j,k) = model.at<double>(c,i);
+                c++;
+            }
         GMM_Component *gmmc = new GMM_Component;
         gmmc->gauss = gauss;
         gmmc->weight = model.at<double>(c,i);
-        components.push_back(gmmc); 
+        components.push_back(gmmc);
     }
 }
 
@@ -102,7 +102,7 @@ Mat GMM::getModel()
 
 Mat GMM::updateModel()
 {
-    for(int i=0;i<componentsCount;i++)
+    for(int i=0; i<componentsCount; i++)
     {
         int c=0;
         for(int j=0; j < 3; j++)
@@ -112,12 +112,12 @@ Mat GMM::updateModel()
             c++;
         }
 
-        for(int j=0;j<3;j++)
-        for(int k=0;k<3;k++)
-        {
-            model.at<double>(c,i) = components[i]->gauss.cov.at<double>(j,k);
-            c++;
-        }       
+        for(int j=0; j<3; j++)
+            for(int k=0; k<3; k++)
+            {
+                model.at<double>(c,i) = components[i]->gauss.cov.at<double>(j,k);
+                c++;
+            }
         model.at<double>(c,i) = components[i]->weight;
     }
     return model;
@@ -147,7 +147,7 @@ double GMM::operator()( int ci, const Vec3d color ) const
             std::cout << "covDeterms: " << covDeterms << std::endl;
             std::cout << gmmc->gauss.cov << std::endl;
         }
-		CV_Assert( covDeterms > std::numeric_limits<double>::epsilon() );
+        CV_Assert( covDeterms > std::numeric_limits<double>::epsilon() );
         Vec3d diff = color;
         diff[0] -= gmmc->gauss.mean.at<double>(0,0);
         diff[1] -= gmmc->gauss.mean.at<double>(1,0);
@@ -156,10 +156,10 @@ double GMM::operator()( int ci, const Vec3d color ) const
         Mat inverseCovs = gmmc->gauss.cov.inv();
 
         double mult = 0.0;
-        for(int i=0;i<3;i++)
+        for(int i=0; i<3; i++)
         {
             double row = 0.0;
-            for(int j=0;j<3;j++)
+            for(int j=0; j<3; j++)
             {
                 row += diff[j] * inverseCovs.at<double>(j,i);
             }
@@ -183,7 +183,7 @@ int GMM::whichComponent( const Vec3d color ) const
 
     for( int ci = 0; ci < componentsCount; ci++ )
     {
-		double p = (*this)( ci, color );
+        double p = (*this)( ci, color );
         if( p > max )
         {
             k = ci;
@@ -206,12 +206,12 @@ void GMM::addSample( int ci, const Vec3d color )
 void GMM::endLearning()
 {
     int numSamples = 0;
-    for(int i=0;i<samples.size();i++)
+    for(int i=0; i<samples.size(); i++)
     {
         numSamples += samples[i].size();
     }
 
-    for(int i=0;i<samples.size();i++)
+    for(int i=0; i<samples.size(); i++)
     {
         components[i]->gauss.compute_from_samples(samples[i]);
         components[i]->weight = samples[i].size() / (double) numSamples;
@@ -233,12 +233,12 @@ GMM_Component::GMM_Component(Mat component) {
     }
 
     gauss.cov = Mat(3,3, CV_64FC1);
-    for(int j=0;j<3;j++)
-    for(int k=0;k<3;k++)
-    {
-        gauss.cov.at<double>(j,k) = component.at<double>(c,0);
-        c++;
-    }       
+    for(int j=0; j<3; j++)
+        for(int k=0; k<3; k++)
+        {
+            gauss.cov.at<double>(j,k) = component.at<double>(c,0);
+            c++;
+        }
 
     weight = component.at<double>(c,0);
 

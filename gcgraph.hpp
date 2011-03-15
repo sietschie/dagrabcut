@@ -66,7 +66,7 @@ private:
         int ts;
         int dist;
         TWeight weight;
-        uchar t; 
+        uchar t;
     };
     class Edge
     {
@@ -173,7 +173,7 @@ TWeight GCGraph<TWeight>::maxFlow()
             v->t = v->weight < 0;
         }
         else
-            v->parent = 0;        
+            v->parent = 0;
     }
     first = first->next;
     last->next = nilNode;
@@ -280,8 +280,8 @@ TWeight GCGraph<TWeight>::maxFlow()
             v->weight = v->weight + minWeight*(1-k*2);
             if( v->weight == 0 )
             {
-               orphans.push_back(v);
-               v->parent = ORPHAN;
+                orphans.push_back(v);
+                v->parent = ORPHAN;
             }
         }
 

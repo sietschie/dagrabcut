@@ -11,10 +11,10 @@ using namespace cv;
 void help()
 {
     cout << "Call:\n"
-    		"./grabcut <input_image_name1> <input_image_name2>... <class_number> <model_name>\n"
-			"reads input_images and input_image_names.yml, generates\n"
-			"GMM of the combined images for class_number\n"
-        << endl;
+         "./grabcut <input_image_name1> <input_image_name2>... <class_number> <model_name>\n"
+         "reads input_images and input_image_names.yml, generates\n"
+         "GMM of the combined images for class_number\n"
+         << endl;
 }
 
 void readImageAndMask(string filename, Mat& image, Mat& mask)
@@ -32,7 +32,7 @@ void readImageAndMask(string filename, Mat& image, Mat& mask)
         cout << "\n Durn, couldn't read image filename " << filename << endl;
         return;
     }
-    
+
     string mask_filename = filename;
     mask_filename.append(".yml");
 
@@ -54,7 +54,7 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model)
             TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
 
     cout << "start learning GMM..." << endl;
-    
+
     GMM gmm(model);
 
     gmm.initLearning();
@@ -67,18 +67,18 @@ int main( int argc, char** argv )
 {
     if( argc < 3 )
     {
-    	help();
+        help();
         return 1;
     }
 
     vector<Vec3f> bgdSamples, fgdSamples;
 
-	int class_number = atoi(argv[argc-2]);
+    int class_number = atoi(argv[argc-2]);
 
     for(int i=1; i<argc-2; i++)
     {
         string filename = argv[i];
-        
+
         cout << "Reading " << filename << "..." << endl;
 
         Mat image, mask;
@@ -104,9 +104,9 @@ int main( int argc, char** argv )
 
     help();
 
-	FileStorage fs2(argv[argc-1], FileStorage::WRITE);
-	fs2 << "fgdModel" << fgdModel;
-	fs2 << "bgdModel" << bgdModel;
+    FileStorage fs2(argv[argc-1], FileStorage::WRITE);
+    fs2 << "fgdModel" << fgdModel;
+    fs2 << "bgdModel" << bgdModel;
 
     return 0;
 }
