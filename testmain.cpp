@@ -157,6 +157,7 @@ void compareMasks(const Mat &gt,const Mat& segm, int class_number, int& true_pos
 
 }
 
+
 int main( int argc, char** argv )
 {
     if( argc < 3 )
@@ -172,14 +173,15 @@ int main( int argc, char** argv )
 	int class_number = atoi(argv[3]);
     string fn_output = argv[4];
         
-    Mat image, mask;
-    readImageAndMask(fn_image, image, mask);
-
     Mat fgdModel, bgdModel;
     FileStorage fs(fn_model, FileStorage::READ);
     fs["fgdModel"] >> fgdModel;
     fs["bgdModel"] >> bgdModel;
+    fs.release();
 
+    Mat image, mask;
+    readImageAndMask(fn_image, image, mask);
+    
     help();
 
     const string winName = "image";
@@ -192,7 +194,7 @@ int main( int argc, char** argv )
 
     int iterCount = gcapp.getIterCount();
     cout << "<" << iterCount << "... ";
-    int newIterCount = gcapp.nextIter(10);
+    int newIterCount = gcapp.nextIter();
     if( newIterCount > iterCount )
     {
         gcapp.showImage();
