@@ -19,7 +19,6 @@ void help()
          << endl;
 }
 
-
 void print_mean_variance(vector<double> list)
 {
     double sum = 0;
@@ -65,7 +64,6 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model, int nr_gaussians = 5
     gmm.endLearning();
 }
 
-
 po::variables_map parseCommandline(int argc, char** argv)
 {
     po::options_description generic("Generic options");
@@ -74,6 +72,7 @@ po::variables_map parseCommandline(int argc, char** argv)
         //("max-iterations,m", po::value<int>()->default_value(100), "maximum number of iterations")
         //("interactive,i", "interactive segmentation")
         ("gaussians,g", po::value<int>()->default_value(5), "number of gaussians used for the gmms")
+        ("cluster,c", po::value<int>()->default_value(5), "number of gaussians used for the hmm")
     ;
 
     po::options_description hidden("Hidden options");
@@ -221,14 +220,13 @@ int main( int argc, char** argv )
     fgdHmm.normalize_weights();
     bgdHmm.normalize_weights();
 
-    while( fgdHmm.components.size() > 5)
+    while( fgdHmm.components.size() > vm["cluster"].as<int>())
     {
         fgdHmm.cluster_once();
         bgdHmm.cluster_once();
     }
 
     FileStorage fs2(model_filename, FileStorage::WRITE);
-    fs2 << "first" << 2;
     fs2 << "files" << "[";
     for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
     {
@@ -242,12 +240,5 @@ int main( int argc, char** argv )
     fgdHmm.free_components();
     bgdHmm.free_components();
 
-    /*    HMM testHmm;
-        FileStorage fs3("test.yml", FileStorage::READ);
-        readHMM(fs3["fgdHmm"], testHmm);
-        fs3.release();
-
-        FileStorage fs4("test2.yml", FileStorage::WRITE);
-        fs4 << "fgdHmm" << testHmm;
-        fs4.release();*/
+    return 0;
 }
