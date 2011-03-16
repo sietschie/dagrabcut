@@ -1,12 +1,12 @@
 program_NAME := learn.bin
-program_OBJS := hmm.o learnmain.o gaussian.o grabcut.o gmm.o
+program_OBJS := learnmain.o gaussian.o grabcut.o gmm.o shared.o hmm.o 
 
 program2_NAME := test.bin
-program2_OBJS := grabcut.o testmain.o hmm.o gaussian.o gmm.o
+program2_OBJS := grabcut.o testmain.o gaussian.o gmm.o shared.o hmm.o 
 
 CC=g++
 CFLAGS+= -g `pkg-config opencv --cflags`
-LDFLAGS+= `pkg-config opencv --libs`
+LDFLAGS+= `pkg-config opencv --libs` -lboost_program_options
 
 all: $(program_NAME) $(program2_NAME)
 

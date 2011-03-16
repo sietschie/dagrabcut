@@ -32,6 +32,9 @@ public:
     Mat getModel();
     int getComponentsCount();
 
+    double KLdiv(const GMM& rhs);
+    double KLsym(GMM& rhs);
+
 private:
     Mat model;
     int componentsCount;

@@ -220,6 +220,41 @@ void GMM::endLearning()
     updateModel();
 }
 
+double GMM::KLsym(GMM& rhs)
+{
+    return KLdiv(rhs) + rhs.KLdiv(*this);
+}
+
+double GMM::KLdiv(const GMM& rhs)
+{
+    vector<int> mapping(components.size());
+    for(int i=0;i<components.size();i++)
+    {
+        int min_component = 0;
+        double min = 10e+100; //TODO: richtig grossen wert aus limits nehmen
+        for(int j=0;j<rhs.components.size();j++)
+        {
+            double div = components[i]->gauss.KLdiv(rhs.components[j]->gauss) - log(rhs.components[j]->weight);
+            if( div < min )
+            {
+                min = div;
+                min_component = j;
+            }
+            mapping[i] = min_component;
+        }
+    }
+    
+    double div = 0.0;
+    for(int i=0;i<components.size();i++)
+    {
+        double kl = components[i]->gauss.KLdiv(rhs.components[mapping[i]]->gauss);
+        double summand =  log( components[i]->weight / rhs.components[mapping[i]]->weight);
+        div += components[i]->weight * (kl + summand);
+    }
+    return div;
+}
+
+
 GMM_Component::GMM_Component() {}
 
 GMM_Component::GMM_Component(Mat component) {
@@ -244,3 +279,5 @@ GMM_Component::GMM_Component(Mat component) {
 
 
 }
+
+
