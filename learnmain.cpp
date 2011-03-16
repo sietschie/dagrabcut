@@ -11,34 +11,33 @@ using namespace std;
 void help()
 {
     cout << "Call:\n"
-    		"./grabcut <input_image_name1> <input_image_name2>... <class_number> <model_name>\n"
-			"reads input_images and input_image_names.yml, generates\n"
-			"HMM of the images for class_number\n"
-        << endl;
+         "./grabcut <input_image_name1> <input_image_name2>... <class_number> <model_name>\n"
+         "reads input_images and input_image_names.yml, generates\n"
+         "HMM of the images for class_number\n"
+         << endl;
 }
 
 
 void print_mean_variance(vector<double> list)
 {
-	double sum = 0;
-	vector<double>::iterator itr;
-	for(itr = list.begin(); itr != list.end(); itr++)
-	{
-		sum += *itr;
-	}
-	double mean = sum / list.size();
+    double sum = 0;
+    vector<double>::iterator itr;
+    for(itr = list.begin(); itr != list.end(); itr++)
+    {
+        sum += *itr;
+    }
+    double mean = sum / list.size();
 
-	double sum_squaredmeandiff = 0;
+    double sum_squaredmeandiff = 0;
 
-	for(itr = list.begin(); itr != list.end(); itr++)
-	{
-		double meandiff = *itr - mean;
-		sum_squaredmeandiff += meandiff * meandiff;
-	}
-	double variance = sum_squaredmeandiff / list.size();
+    for(itr = list.begin(); itr != list.end(); itr++)
+    {
+        double meandiff = *itr - mean;
+        sum_squaredmeandiff += meandiff * meandiff;
+    }
+    double variance = sum_squaredmeandiff / list.size();
 
-	cout << "Mean: " << mean << "   Variance: " << variance << endl;
-
+    cout << "Mean: " << mean << "   Variance: " << variance << endl;
 }
 
 void learnGMMfromSamples(vector<Vec3f> samples, Mat& model)
@@ -55,7 +54,7 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model)
             TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
 
     cout << "start learning GMM..." << endl;
-    
+
     GMM gmm(model);
 
     gmm.initLearning();
@@ -80,7 +79,7 @@ void readImageAndMask(string filename, Mat& image, Mat& mask)
         cout << "\n Durn, couldn't read image filename " << filename << endl;
         return;
     }
-    
+
     string mask_filename = filename;
     mask_filename.append(".yml");
 
@@ -90,13 +89,13 @@ void readImageAndMask(string filename, Mat& image, Mat& mask)
 
 int main( int argc, char** argv )
 {
-	if( argc < 3)
-	{
-		help();
-		return 1;
-	}
+    if( argc < 3)
+    {
+        help();
+        return 1;
+    }
 
-	int class_number = atoi(argv[argc-2]);
+    int class_number = atoi(argv[argc-2]);
 
     HMM fgdHmm, bgdHmm;
     vector<HMM> fgdHmms, bgdHmms;
@@ -107,8 +106,8 @@ int main( int argc, char** argv )
         vector<Vec3f> bgdSamples, fgdSamples;
         HMM cur_fgdHmm, cur_bgdHmm;
         string filename = argv[i];
-        
-        std::cout << "Reading " << filename << "..." << std::endl;
+
+        cout << "Reading " << filename << "..." << endl;
 
         Mat image, mask;
         readImageAndMask(filename, image, mask);
@@ -160,38 +159,38 @@ int main( int argc, char** argv )
         fgdHmms.push_back(cur_fgdHmm);
         bgdHmms.push_back(cur_bgdHmm);
     }
-    
+
     vector<double> fgdDivs;
-    for(int i=0;i<fgdHmms.size();i++)
-    for(int j=i+1;i<fgdHmms.size();i++)
-    {
-        fgdDivs.push_back(fgdHmms[i].KLsym(fgdHmms[j]));
-    }
-	cout << "fgdDivs:  ";
-	print_mean_variance(fgdDivs);
+    for(int i=0; i<fgdHmms.size(); i++)
+        for(int j=i+1; i<fgdHmms.size(); i++)
+        {
+            fgdDivs.push_back(fgdHmms[i].KLsym(fgdHmms[j]));
+        }
+    cout << "fgdDivs:  ";
+    print_mean_variance(fgdDivs);
 
     vector<double> bgdDivs;
-    for(int i=0;i<bgdHmms.size();i++)
-    for(int j=i+1;i<bgdHmms.size();i++)
-    {
-        bgdDivs.push_back(bgdHmms[i].KLsym(bgdHmms[j]));
-    }
-	cout << "bgdDivs:  ";
-	print_mean_variance(bgdDivs);
+    for(int i=0; i<bgdHmms.size(); i++)
+        for(int j=i+1; i<bgdHmms.size(); i++)
+        {
+            bgdDivs.push_back(bgdHmms[i].KLsym(bgdHmms[j]));
+        }
+    cout << "bgdDivs:  ";
+    print_mean_variance(bgdDivs);
 
     vector<double> betweenDivs;
-    for(int i=0;i<bgdHmms.size();i++)
-    for(int j=0;i<fgdHmms.size();i++)
-    {
-        betweenDivs.push_back(bgdHmms[i].KLsym(bgdHmms[j]));
-    }
-	cout << "betweenDivs:  ";
-	print_mean_variance(betweenDivs);
+    for(int i=0; i<bgdHmms.size(); i++)
+        for(int j=0; i<fgdHmms.size(); i++)
+        {
+            betweenDivs.push_back(bgdHmms[i].KLsym(bgdHmms[j]));
+        }
+    cout << "betweenDivs:  ";
+    print_mean_variance(betweenDivs);
 
 
-    for(int i=0;i<fgdHmms.size();i++)
+    for(int i=0; i<fgdHmms.size(); i++)
         fgdHmm.add_model(fgdHmms[i]);
-    for(int i=0;i<bgdHmms.size();i++)
+    for(int i=0; i<bgdHmms.size(); i++)
         bgdHmm.add_model(bgdHmms[i]);
 
     cout << "KLdiv: " << fgdHmm.KLdiv(bgdHmm) << endl;
@@ -209,7 +208,7 @@ int main( int argc, char** argv )
     FileStorage fs2(argv[argc-1], FileStorage::WRITE);
     fs2 << "first" << 2;
     fs2 << "files" << "[";
-    for(int i=1; i<argc-1;i++)
+    for(int i=1; i<argc-1; i++)
     {
         fs2 << argv[i];
     }
@@ -221,12 +220,12 @@ int main( int argc, char** argv )
     fgdHmm.free_components();
     bgdHmm.free_components();
 
-/*    HMM testHmm;
-    FileStorage fs3("test.yml", FileStorage::READ);
-    readHMM(fs3["fgdHmm"], testHmm);
-    fs3.release();
+    /*    HMM testHmm;
+        FileStorage fs3("test.yml", FileStorage::READ);
+        readHMM(fs3["fgdHmm"], testHmm);
+        fs3.release();
 
-    FileStorage fs4("test2.yml", FileStorage::WRITE);
-    fs4 << "fgdHmm" << testHmm;
-    fs4.release();*/
+        FileStorage fs4("test2.yml", FileStorage::WRITE);
+        fs4 << "fgdHmm" << testHmm;
+        fs4.release();*/
 }

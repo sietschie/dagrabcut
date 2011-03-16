@@ -20,7 +20,7 @@ class GMM
 {
 public:
     static const int dim = 3;
-    
+
     GMM( Mat& _model, int _componensCount = 5);
     double operator()( const Vec3d color ) const;
     double operator()( int ci, const Vec3d color ) const;

@@ -161,7 +161,7 @@ void checkMask( const Mat& img, const Mat& mask )
             uchar val = mask.at<uchar>(y,x);
             if( val!=GC_BGD && val!=GC_FGD && val!=GC_PR_BGD && val!=GC_PR_FGD )
                 CV_Error( CV_StsBadArg, "mask element value must be equel"
-                    "GC_BGD or GC_FGD or GC_PR_BGD or GC_PR_FGD" );
+                          "GC_BGD or GC_FGD or GC_PR_BGD or GC_PR_FGD" );
         }
     }
 }
@@ -234,8 +234,8 @@ void assignGMMsComponents( const Mat& img, const Mat& mask, const GMM& bgdGMM, c
         for( p.x = 0; p.x < img.cols; p.x++ )
         {
             Vec3d color = img.at<Vec3b>(p);
-			compIdxs.at<int>(p) = mask.at<uchar>(p) == GC_BGD || mask.at<uchar>(p) == GC_PR_BGD ?
-                bgdGMM.whichComponent(color) : fgdGMM.whichComponent(color);
+            compIdxs.at<int>(p) = mask.at<uchar>(p) == GC_BGD || mask.at<uchar>(p) == GC_PR_BGD ?
+                                  bgdGMM.whichComponent(color) : fgdGMM.whichComponent(color);
         }
     }
 }
@@ -357,8 +357,8 @@ double estimateSegmentation( GCGraph<double>& graph, Mat& mask )
 }
 
 void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
-             Mat& bgdModel, Mat& fgdModel,
-             int iterCount, int mode )
+                 Mat& bgdModel, Mat& fgdModel,
+                 int iterCount, int mode )
 {
     if( img.empty() )
         CV_Error( CV_StsBadArg, "image is empty" );
@@ -423,7 +423,7 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
         learnGMMs( img, mask, compIdxs, bgdGMM, fgdGMM );
         constructGCGraph(img, mask, bgdGMM, fgdGMM, lambda, leftW, upleftW, upW, uprightW, graph );
         current_flow = estimateSegmentation( graph, mask );
-        cout << " diff flow:" << abs(last_flow - current_flow) << " " << flush;  
+        cout << " diff flow:" << abs(last_flow - current_flow) << " " << flush;
 
         if( abs(last_flow - current_flow) < eps )
             break;

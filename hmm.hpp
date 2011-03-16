@@ -8,7 +8,7 @@
 
 //TODO: think about making some stuff private
 
-class HMM_Component : public GMM_Component{
+class HMM_Component : public GMM_Component {
 public:
     HMM_Component *left_child, *right_child;
     double div;
