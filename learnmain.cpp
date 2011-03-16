@@ -4,7 +4,6 @@
 #include "shared.hpp"
 
 #include <iostream>
-#include <stdio.h>
 #include <boost/program_options.hpp>
 
 using namespace std;
