@@ -1,6 +1,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "grabcut.hpp"
+#include "shared.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -17,34 +18,11 @@ void help()
          << endl;
 }
 
-void readImageAndMask(string filename, Mat& image, Mat& mask)
-{
-    cout << "Reading " << filename << "..." << endl;
-
-    if( filename.empty() )
-    {
-        cout << "\nDurn, couldn't read in " << filename << endl;
-        return;
-    }
-    image = imread( filename, 1 );
-    if( image.empty() )
-    {
-        cout << "\n Durn, couldn't read image filename " << filename << endl;
-        return;
-    }
-
-    string mask_filename = filename;
-    mask_filename.append(".yml");
-
-    FileStorage fs(mask_filename, FileStorage::READ);
-    fs["mask"] >> mask;
-}
-
-void learnGMMfromSamples(vector<Vec3f> samples, Mat& model)
+void learnGMMfromSamples(vector<Vec3f> samples, Mat& model, int nr_gaussians = 5)
 {
     const int kMeansItCount = 10;
     const int kMeansType = KMEANS_PP_CENTERS;
-    const int componentsCount = 5;
+    const int componentsCount = nr_gaussians;
 
     Mat labels;
     CV_Assert( !samples.empty() );
@@ -55,7 +33,7 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model)
 
     cout << "start learning GMM..." << endl;
 
-    GMM gmm(model);
+    GMM gmm(model, nr_gaussians);
 
     gmm.initLearning();
     for( int i = 0; i < (int)samples.size(); i++ )
@@ -63,11 +41,14 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model)
     gmm.endLearning();
 }
 
-int main( int argc, char** argv )
+po::variables_map parseCommandline(int argc, char** argv)
 {
     po::options_description generic("Generic options");
     generic.add_options()
-        ("help", "produce help message")
+        ("help,h", "produce help message")
+        //("max-iterations,m", po::value<int>()->default_value(100), "maximum number of iterations")
+        //("interactive,i", "interactive segmentation")
+        ("gaussians,g", po::value<int>()->default_value(5), "number of gaussians used for the gmms")
     ;
 
     po::options_description hidden("Hidden options");
@@ -98,16 +79,26 @@ int main( int argc, char** argv )
     {
         cout << "Usage: ./learn.bin [options] modelfile class-number imagefile1 imagefile2 ...\n";
         cout << visible << endl;
-        cout << e.what() << "\n";
-        return 1;
+        if(!vm.count("help"))
+        {
+            cout << e.what() << "\n";
+            exit(0);
+        }
+        exit(1);
     }
+    return vm;
+}
+
+int main( int argc, char** argv )
+{
+    po::variables_map vm = parseCommandline(argc, argv);
 
     vector< string > input_images = vm["images"].as< vector<string> >();
+    int class_number = vm["class-number"].as<int>();
+    string model_filename = vm["model"].as<string>();
+    int nr_gaussians = vm["gaussians"].as<int>();
 
     vector<Vec3f> bgdSamples, fgdSamples;
-
-    int class_number = vm["class-number"].as<int>();
-
 
     for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
     {
@@ -132,9 +123,7 @@ int main( int argc, char** argv )
     learnGMMfromSamples(bgdSamples, bgdModel);
     learnGMMfromSamples(fgdSamples, fgdModel);
 
-    help();
-
-    FileStorage fs2(vm["model"].as<string>(), FileStorage::WRITE);
+    FileStorage fs2(model_filename, FileStorage::WRITE);
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
 

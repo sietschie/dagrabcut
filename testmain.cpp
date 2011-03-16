@@ -1,18 +1,19 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "grabcut.hpp"
+#include "shared.hpp"
 
 #include <iostream>
 #include <stdio.h>
+#include <boost/program_options.hpp>
 
 using namespace std;
 using namespace cv;
+namespace po = boost::program_options;
 
 void help()
 {
-    cout << "Call:\n"
-         "./grabcut <input_model> <input_image> <class_number> <output_name>\n"
-         "reads input_images and input_image_names.yml, generates\n"
+    cout << "reads input_images and input_image_names.yml, generates\n"
          "GMM of the combined images for class_number\n"
          << endl;
 }
@@ -41,7 +42,6 @@ private:
     const Mat* image;
     Mat input_mask;
     Mat bgdModel, fgdModel;
-    Mat input_bgdModel, input_fgdModel;
 
     bool isInitialized;
 
@@ -55,11 +55,8 @@ void GCApplication::setImageAndWinName( const Mat& _image, const string& _winNam
     image = &_image;
     winName = &_winName;
 
-    input_bgdModel = _bgdModel;
-    input_fgdModel = _fgdModel;
-
-    bgdModel = input_bgdModel.clone();
-    fgdModel = input_fgdModel.clone();
+    bgdModel = _bgdModel;
+    fgdModel = _fgdModel;
 }
 
 void GCApplication::showImage() const
@@ -97,28 +94,6 @@ int GCApplication::nextIter(int max_iterations = 2)
 
 GCApplication gcapp;
 
-void readImageAndMask(string filename, Mat& image, Mat& mask)
-{
-    cout << "Reading " << filename << "..." << endl;
-
-    if( filename.empty() )
-    {
-        cout << "\nDurn, couldn't read in " << filename << endl;
-        return;
-    }
-    image = imread( filename, 1 );
-    if( image.empty() )
-    {
-        cout << "\n Durn, couldn't read image filename " << filename << endl;
-        return;
-    }
-
-    string mask_filename = filename;
-    mask_filename.append(".yml");
-
-    FileStorage fs(mask_filename, FileStorage::READ);
-    fs["mask"] >> mask;
-}
 
 void compareMasks(const Mat &gt,const Mat& segm, int class_number, int& true_positive, int& true_negative, int& false_positive, int& false_negative, int& unknown)
 {
@@ -159,32 +134,82 @@ void compareMasks(const Mat &gt,const Mat& segm, int class_number, int& true_pos
 
 }
 
+po::variables_map parseCommandline(int argc, char** argv)
+{
+    po::options_description generic("Generic options");
+    generic.add_options()
+        ("help,h", "produce help message")
+        ("max-iterations,m", po::value<int>()->default_value(100), "maximum number of iterations")
+        ("interactive,i", "interactive segmentation")
+        //("gaussians,g", po::value<int>()->default_value(5), "number of gaussians used for the gmms")
+    ;
+
+    po::options_description hidden("Hidden options");
+    hidden.add_options()
+        ("class-number", po::value<int>()->required(), "the relevant class number")
+        ("model", po::value<string>()->required(), "where to read the model from")
+        ("image", po::value<string>()->required(), "the input image")
+        ("output", po::value<string>()->required(), "the output file")
+    ;
+
+    po::positional_options_description positional;
+    positional.add("model", 1);
+    positional.add("class-number", 1);
+    positional.add("image", 1);
+    positional.add("output", 1);
+
+    po::options_description cmdline_options;
+    cmdline_options.add(generic).add(hidden);
+
+    po::options_description visible;
+    visible.add(generic);
+
+    po::variables_map vm;
+ 
+    try {
+        po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(positional).run(), vm);
+        po::notify(vm);
+
+    } catch ( std::exception& e )
+    {
+        cout << "Usage: ./test.bin [options] modelfile class-number imagefile outputfile\n";
+        cout << visible << endl;
+        if(!vm.count("help"))
+        {
+            cout << e.what() << "\n";
+            exit(0);
+        }
+        exit(1);
+    }
+    return vm;
+}
 
 int main( int argc, char** argv )
 {
-    if( argc < 3 )
-    {
-        help();
-        return 1;
-    }
+    po::variables_map vm = parseCommandline(argc, argv);
+
+    string input_image = vm["image"].as<string>();
+    int class_number = vm["class-number"].as<int>();
+    string model_filename = vm["model"].as<string>();
+    //int nr_gaussians = vm["gaussians"].as<int>();
+    bool interactive = vm.count("interactive");
+    int max_iterations = vm["max-iterations"].as<int>();
+    string output_filename = vm["output"].as<string>();
 
     vector<Vec3f> bgdSamples, fgdSamples;
 
-    string fn_model = argv[1];
-    string fn_image = argv[2];
-    int class_number = atoi(argv[3]);
-    string fn_output = argv[4];
-
     Mat fgdModel, bgdModel;
-    FileStorage fs(fn_model, FileStorage::READ);
+    Mat input_fgdModel, input_bgdModel;
+    FileStorage fs(model_filename, FileStorage::READ);
     fs["fgdModel"] >> fgdModel;
     fs["bgdModel"] >> bgdModel;
     fs.release();
 
-    Mat image, mask;
-    readImageAndMask(fn_image, image, mask);
+    input_fgdModel = fgdModel.clone();
+    input_bgdModel = bgdModel.clone();
 
-    help();
+    Mat image, mask;
+    readImageAndMask(input_image, image, mask);
 
     const string winName = "image";
     cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
@@ -192,18 +217,19 @@ int main( int argc, char** argv )
     gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
     gcapp.showImage();
 
-    cvWaitKey(1000);
+    if(interactive)
+        cvWaitKey(1000);
 
     int iterCount = gcapp.getIterCount();
     cout << "<" << iterCount << "... ";
-    int newIterCount = gcapp.nextIter();
+    int newIterCount = gcapp.nextIter(max_iterations);
     if( newIterCount > iterCount )
     {
         gcapp.showImage();
         cout << newIterCount << ">" << endl;
     }
 
-    FileStorage fs2(fn_output, FileStorage::WRITE);
+    FileStorage fs2(output_filename, FileStorage::WRITE);
     fs2 << "mask" << gcapp.mask;
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
@@ -216,10 +242,35 @@ int main( int argc, char** argv )
     double bgd_rate = tn / (double) (tn + fp);
     double joint_rate = (fgd_rate + bgd_rate) / 2;
 
-    cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate << endl;
+    cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate;
+
+    {
+        GMM i(input_fgdModel);
+        GMM r(fgdModel);
+        double kl_div_i_r = i.KLdiv(r);
+        double kl_div_r_i = r.KLdiv(i);
+        double kl_sym = i.KLsym(r);
+
+        cout << " ,fgd KL input result: " << kl_div_i_r;
+        cout << " ,fgd KL result input: " << kl_div_r_i;
+        cout << " ,fgd KL sym: " << kl_sym;
+    }
 
 
-    cvWaitKey(0);
+    {
+        GMM i(input_bgdModel);
+        GMM r(bgdModel);
+        double kl_div_i_r = i.KLdiv(r);
+        double kl_div_r_i = r.KLdiv(i);
+        double kl_sym = i.KLsym(r);
+
+        cout << " ,bgd KL input result: " << kl_div_i_r;
+        cout << " ,bgd KL result input: " << kl_div_r_i;
+        cout << " ,bgd KL sym: " << kl_sym;
+    }
+    cout << endl;
+    if(interactive)
+        cvWaitKey(0);
 
 exit_main:
     cvDestroyWindow( winName.c_str() );

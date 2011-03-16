@@ -1,8 +1,8 @@
 program_NAME := learn.bin
-program_OBJS := learnmain.o gaussian.o grabcut.o gmm.o
+program_OBJS := learnmain.o gaussian.o grabcut.o gmm.o shared.o
 
 program2_NAME := test.bin
-program2_OBJS := grabcut.o testmain.o gaussian.o gmm.o
+program2_OBJS := grabcut.o testmain.o gaussian.o gmm.o shared.o
 
 CC=g++
 
