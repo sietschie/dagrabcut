@@ -1,10 +1,10 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+
 #include "grabcut.hpp"
 #include "shared.hpp"
 
 #include <iostream>
-#include <stdio.h>
 #include <boost/program_options.hpp>
 
 using namespace std;

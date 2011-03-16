@@ -1,10 +1,11 @@
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "grabcut.hpp"
-#include "shared.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include <iostream>
 #include <boost/program_options.hpp>
+
+#include "grabcut.hpp"
+#include "shared.hpp"
 
 using namespace std;
 using namespace cv;
@@ -119,10 +120,16 @@ int main( int argc, char** argv )
     }
 
     Mat bgdModel, fgdModel;
-    learnGMMfromSamples(bgdSamples, bgdModel);
-    learnGMMfromSamples(fgdSamples, fgdModel);
+    learnGMMfromSamples(bgdSamples, bgdModel, nr_gaussians);
+    learnGMMfromSamples(fgdSamples, fgdModel, nr_gaussians);
 
     FileStorage fs2(model_filename, FileStorage::WRITE);
+    fs2 << "files" << "[";
+    for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
+    {
+        fs2 << *filename;
+    }
+    fs2 << "]";
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
 
