@@ -325,9 +325,12 @@ double HMM::KLdiv(const HMM& rhs)
     double div = 0.0;
     for(int i=0; i<components.size(); i++)
     {
-        double kl = components[i]->gauss.KLdiv(rhs.components[mapping[i]]->gauss);
-        double summand =  log( components[i]->weight / rhs.components[mapping[i]]->weight);
-        div += components[i]->weight * (kl + summand);
+        if( components[i]->weight != 0 )
+        {
+            double kl = components[i]->gauss.KLdiv(rhs.components[mapping[i]]->gauss);
+            double summand =  log( components[i]->weight / rhs.components[mapping[i]]->weight);
+            div += components[i]->weight * (kl + summand);
+        }
     }
     return div;
 }
