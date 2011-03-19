@@ -307,6 +307,44 @@ HMM_Component::HMM_Component( Mat Component ) : GMM_Component(Component) {
     div = 0;
 }
 
+HMM_Component::HMM_Component(const HMM_Component& rhs) {
+    left_child = NULL;
+    right_child = NULL;
+    if(rhs.left_child)
+    {
+        left_child = new HMM_Component(*rhs.left_child);
+    }
+    if(rhs.right_child)
+    {
+        right_child = new HMM_Component(*rhs.right_child);
+    }
+    samples = rhs.samples;
+    div = rhs.div;
+}
+
+HMM_Component& HMM_Component::operator=(const HMM_Component& rhs) {
+    if(this != &rhs)
+    {
+        HMM_Component* tmp_left = NULL;
+        HMM_Component* tmp_right = NULL;
+        if(rhs.left_child)
+            tmp_left = new HMM_Component(*rhs.left_child);
+
+        if(rhs.right_child)
+            tmp_right = new HMM_Component(*rhs.right_child);
+
+        delete left_child;
+        delete right_child;
+
+        left_child = tmp_left;
+        right_child = tmp_right;
+
+        samples = rhs.samples;
+        div = rhs.div;
+    }
+    return *this;
+}
+
 HMM_Component::HMM_Component() {
     left_child = NULL;
     right_child = NULL;

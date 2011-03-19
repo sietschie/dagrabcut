@@ -3,6 +3,8 @@
 #include <boost/test/unit_test.hpp>
 #include <opencv2/core/core.hpp>
 #include "../src/gmm.hpp"
+#include "../src/hmm.hpp"
+#include "../src/gaussian.hpp"
 
 struct Data
 {
@@ -150,6 +152,74 @@ BOOST_AUTO_TEST_CASE(MyTestCaseGMM_KLDiv)
     klsym_21 = gmm2.KLsym(gmm1);
     BOOST_CHECK_CLOSE( klsym_12, klsym_21, 0.0001f);
     BOOST_CHECK_CLOSE( klsym_12, 0.0, 0.0001f);
+}
+
+BOOST_AUTO_TEST_CASE(MyTestCaseGaussian_CopyOperator)
+{
+    Gaussian g1;
+    g1.cov = cv::Mat::ones(3,3, CV_64FC1);
+    g1.mean = cv::Mat::ones(3,1, CV_64FC1);
+
+    Gaussian g2;
+    g2 = g1;
+    g2.cov.at<double>(1,1) = 2.0;
+    g2.mean.at<double>(1,0) = 3.0;
+
+    BOOST_CHECK_CLOSE( cv::sum(g1.cov)[0], cv::sum(g2.cov)[0] - 1.0, 0.0001f);
+    BOOST_CHECK_CLOSE( cv::sum(g1.mean)[0], cv::sum(g2.mean)[0] - 2.0, 0.0001f);
+}
+
+BOOST_AUTO_TEST_CASE(MyTestCaseGaussian_CopyConstructor)
+{
+    Gaussian g1;
+    g1.cov = cv::Mat::ones(3,3, CV_64FC1);
+    g1.mean = cv::Mat::ones(3,1, CV_64FC1);
+
+    Gaussian g2 = g1;
+    g2.cov.at<double>(1,1) = 2.0;
+    g2.mean.at<double>(1,0) = 3.0;
+
+    BOOST_CHECK_CLOSE( cv::sum(g1.cov)[0], cv::sum(g2.cov)[0] - 1.0, 0.0001f);
+    BOOST_CHECK_CLOSE( cv::sum(g1.mean)[0], cv::sum(g2.mean)[0] - 2.0, 0.0001f);
+}
+
+BOOST_AUTO_TEST_CASE(MyTestCaseHMMComponent_CopyConstructor)
+{
+    HMM_Component c1;
+    c1.left_child = new HMM_Component();
+    c1.right_child = new HMM_Component();
+    c1.div = 1.0;
+    Vec3b p;
+    p[0] = 1.0;
+    p[1] = 1.1;
+    p[2] = 1.2;
+    c1.samples.push_back(p);
+    HMM_Component c2 = c1;
+
+    BOOST_CHECK(c1.left_child != c2.left_child);
+    BOOST_CHECK(c1.right_child != c2.right_child);
+    BOOST_CHECK_EQUAL(c1.samples.size(), c2.samples.size());
+    BOOST_CHECK_CLOSE(c2.div, c1.div, 0.0001f);
+}
+
+BOOST_AUTO_TEST_CASE(MyTestCaseHMMComponent_AssignmentOperator)
+{
+    HMM_Component c1;
+    c1.left_child = new HMM_Component();
+    c1.right_child = new HMM_Component();
+    c1.div = 1.0;
+    Vec3b p;
+    p[0] = 1.0;
+    p[1] = 1.1;
+    p[2] = 1.2;
+    c1.samples.push_back(p);
+    HMM_Component c2;
+    c2 = c1;
+
+    BOOST_CHECK(c1.left_child != c2.left_child);
+    BOOST_CHECK(c1.right_child != c2.right_child);
+    BOOST_CHECK_EQUAL(c1.samples.size(), c2.samples.size());
+    BOOST_CHECK_CLOSE(c2.div, c1.div, 0.0001f);
 }
 
 BOOST_AUTO_TEST_CASE(MyTestCase)

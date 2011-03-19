@@ -10,8 +10,10 @@ public:
     double KLdiv(Gaussian& g2);
     double KLsym(Gaussian& g2);
     Gaussian();
+    Gaussian(const Gaussian& rhs);
     void compute_from_samples(std::vector<cv::Vec3b> samples);
     ~Gaussian();
+    Gaussian& operator=(const Gaussian& rhs);
 };
 
 void readGaussian(const cv::FileNode& fn, Gaussian& gauss);

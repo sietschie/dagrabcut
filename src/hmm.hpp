@@ -16,7 +16,9 @@ public:
     std::vector<cv::Vec3b> get_all_samples();
     HMM_Component(cv::Mat component );
     HMM_Component();
+    HMM_Component(const HMM_Component& rhs);
     ~HMM_Component();
+    HMM_Component& operator=(const HMM_Component& rhs);
 };
 
 class HMM : public MM<HMM_Component> {
