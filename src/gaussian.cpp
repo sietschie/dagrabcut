@@ -4,6 +4,23 @@
 using namespace cv;
 using namespace std;
 
+Gaussian& Gaussian::operator=(const Gaussian& rhs)
+{
+    if(this != &rhs)
+    {
+        cov = rhs.cov.clone();
+        mean = rhs.mean.clone();
+    }
+    return *this;
+}
+
+Gaussian::Gaussian(const Gaussian& rhs)
+{
+    cov = rhs.cov.clone();
+    mean = rhs.mean.clone();
+}
+
+
 cv::FileStorage& operator<<(cv::FileStorage& fs, const Gaussian& gauss)
 {
     fs << "{";

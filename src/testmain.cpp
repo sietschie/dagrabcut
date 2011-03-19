@@ -210,10 +210,9 @@ int main( int argc, char** argv )
     const string winName = "image";
     cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
 
-    Mat bgdModel = bgdHmm.get_model();
-    Mat fgdModel = fgdHmm.get_model();
-
-    cout << "fgdModel: " << fgdModel << endl;
+    Mat bgdModel = bgdHmm.getModel();
+    Mat fgdModel = fgdHmm.getModel();
+    Mat fgdModel_cloned = fgdModel.clone();
 
     gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
     gcapp.showImage();
@@ -246,9 +245,9 @@ int main( int argc, char** argv )
     cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate;
 
     {
-        Mat model = fgdHmm.get_model(); 
-        GMM i(model);
-        GMM r(fgdModel);
+        Mat model = fgdHmm.getModel(); 
+        GMM i; i.setModel(model);
+        GMM r; r.setModel(fgdModel);
         double kl_div_i_r = i.KLdiv(r);
         double kl_div_r_i = r.KLdiv(i);
         double kl_sym = i.KLsym(r);
@@ -260,9 +259,9 @@ int main( int argc, char** argv )
 
 
     {
-        Mat model = bgdHmm.get_model(); 
-        GMM i(model);
-        GMM r(bgdModel);
+        Mat model = bgdHmm.getModel(); 
+        GMM i; i.setModel(model);
+        GMM r; r.setModel(bgdModel);
         double kl_div_i_r = i.KLdiv(r);
         double kl_div_r_i = r.KLdiv(i);
         double kl_sym = i.KLsym(r);

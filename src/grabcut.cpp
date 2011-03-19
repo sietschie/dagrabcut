@@ -41,7 +41,7 @@
 
 //#include "precomp.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "graph.h"
+#include "maxflow/graph.h"
 #include <limits>
 
 #include <iostream>
@@ -246,7 +246,9 @@ void assignGMMsComponents( const Mat& img, const Mat& mask, const GMM& bgdGMM, c
 void learnGMMs( const Mat& img, const Mat& mask, const Mat& compIdxs, GMM& bgdGMM, GMM& fgdGMM )
 {
     int componentsCount = 5;
+    bgdGMM.setComponentsCount(5);
     bgdGMM.initLearning();
+    fgdGMM.setComponentsCount(5);
     fgdGMM.initLearning();
     Point p;
     for( int ci = 0; ci < componentsCount; ci++ )
@@ -362,7 +364,10 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
     if( img.type() != CV_8UC3 )
         CV_Error( CV_StsBadArg, "image mush have CV_8UC3 type" );
 
-    GMM bgdGMM( bgdModel ), fgdGMM( fgdModel );
+    GMM bgdGMM, fgdGMM;
+    bgdGMM.setModel(bgdModel);
+    fgdGMM.setModel(fgdModel);
+
     Mat compIdxs( img.size(), CV_32SC1 );
 
     if( mode == GC_INIT_WITH_RECT || mode == GC_INIT_WITH_MASK )
@@ -430,5 +435,10 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
 
         last_flow = current_flow;
     }
+    Mat new_bgdModel = bgdGMM.getModel();
+    Mat new_fgdModel = fgdGMM.getModel();
+
+    new_bgdModel.copyTo(bgdModel);
+    new_fgdModel.copyTo(fgdModel);
 }
 

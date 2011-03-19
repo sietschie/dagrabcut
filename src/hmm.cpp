@@ -88,10 +88,10 @@ void readHMM(const cv::FileNode& fn, HMM& hmm) {
     FileNodeIterator fni = fn["components"].begin();
     for(int i = 0; i<size; i++)
     {
-        HMM_Component *hmmc = new HMM_Component();
+        hmm.setComponentsCount(hmm.getComponentsCount() + 1);
+        HMM_Component *hmmc = hmm.components.back();
         readHMM_Component((*fni), *hmmc);
         fni++;
-        hmm.components.push_back(hmmc);
     }
 }
 
@@ -201,25 +201,6 @@ void HMM::add_model(Mat &model, const Mat &mask, const Mat &img, int dim)
     }
 }
 
-int HMM::whichComponent( const Vec3d color ) const
-{
-    int k = 0;
-    double max = 0;
-
-    for( int ci = 0; ci < components.size(); ci++ )
-    {
-        double p = (*this)( ci, color );
-        if( p > max )
-        {
-            k = ci;
-            max = p;
-        }
-    }
-    return k;
-}
-
-
-
 void HMM::add_model( Mat &model, const Mat &compIdxs, const Mat &mask, const Mat &img, int dim) {
     int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
 
@@ -274,66 +255,6 @@ void HMM::add_model( Mat &model, const Mat &compIdxs, const Mat &mask, const Mat
     }
 }
 
-cv::Mat HMM::get_model() {
-    int dim = 3;
-    int modelSize = (dim + 1) * dim + 1;
-    Mat model = Mat( modelSize, components.size(), CV_64FC1 );
-    for(int i=0; i<components.size(); i++)
-    {
-        int counter = 0;
-        for(int j=0; j<dim; j++)
-        {
-            model.at<double>( counter, i) = components[i]->gauss.mean.at<double>(j,0);
-            counter++;
-        }
-
-        for(int j=0; j<dim; j++)
-            for(int k=0; k<dim; k++)
-            {
-                model.at<double>(counter, i) = components[i]->gauss.cov.at<double>(j,k);
-                counter++;
-            }
-        model.at<double>(counter, i) = components[i]->weight;
-    }
-    return model;
-}
-
-double HMM::KLsym(HMM& rhs)
-{
-    return KLdiv(rhs) + rhs.KLdiv(*this);
-}
-
-double HMM::KLdiv(const HMM& rhs)
-{
-    vector<int> mapping(components.size());
-    for(int i=0; i<components.size(); i++)
-    {
-        int min_component = 0;
-        double min = 10e+100; //TODO: richtig grossen wert aus limits nehmen
-        for(int j=0; j<rhs.components.size(); j++)
-        {
-            double div = components[i]->gauss.KLdiv(rhs.components[j]->gauss) - log(rhs.components[j]->weight);
-            if( div < min )
-            {
-                min = div;
-                min_component = j;
-            }
-            mapping[i] = min_component;
-        }
-    }
-
-    double div = 0.0;
-    for(int i=0; i<components.size(); i++)
-    {
-        if( components[i]->weight != 0 )
-        {
-            double kl = components[i]->gauss.KLdiv(rhs.components[mapping[i]]->gauss);
-            double summand =  log( components[i]->weight / rhs.components[mapping[i]]->weight);
-            div += components[i]->weight * (kl + summand);
-        }
-    }
-    return div;
-}
 
 void HMM::normalize_weights() {
     double sum = 0.0;
@@ -346,50 +267,6 @@ void HMM::normalize_weights() {
     {
         components[i]->weight /= sum;
     }
-}
-
-double HMM::operator()( const Vec3d color ) const
-{
-    double res = 0;
-    for( int ci = 0; ci < components.size(); ci++ )
-        res += components[ci]->weight * (*this)(ci, color );
-    return res;
-}
-
-double HMM::operator()( int ci, const Vec3d color ) const
-{
-    double res = 0;
-    HMM_Component* hmmc = components[ci];
-    if( hmmc->weight > 0 )
-    {
-        double covDeterms = determinant(hmmc->gauss.cov);
-        CV_Assert( covDeterms > std::numeric_limits<double>::epsilon() );
-        Vec3d diff = color;
-        diff[0] -= hmmc->gauss.mean.at<double>(0,0);
-        diff[1] -= hmmc->gauss.mean.at<double>(1,0);
-        diff[2] -= hmmc->gauss.mean.at<double>(2,0);
-
-        Mat inverseCovs = hmmc->gauss.cov.inv();
-
-        double mult = 0.0;
-        for(int i=0; i<3; i++)
-        {
-            double row = 0.0;
-            for(int j=0; j<3; j++)
-            {
-                row += diff[j] * inverseCovs.at<double>(j,i);
-            }
-            mult += diff[i] * row;
-        }
-
-        //double test = diff * (inverseCovs * diff);
-
-        //double mult = diff[0]*(diff[0]*inverseCovs[0][0] + diff[1]*inverseCovs[1][0] + diff[2]*inverseCovs[2][0])
-        //           + diff[1]*(diff[0]*inverseCovs[0][1] + diff[1]*inverseCovs[1][1] + diff[2]*inverseCovs[2][1])
-        //           + diff[2]*(diff[0]*inverseCovs[0][2] + diff[1]*inverseCovs[1][2] + diff[2]*inverseCovs[2][2]);
-        res = 1.0f/sqrt(covDeterms) * exp(-0.5f*mult);
-    }
-    return res;
 }
 
 
@@ -407,7 +284,7 @@ HMM::~HMM() {
 }
 
 vector<cv::Vec3b> HMM_Component::get_all_samples() {
-    vector<cv::Vec3b> result(500);
+    vector<cv::Vec3b> result(500); //TODO: ist das noetig?
 
     if( right_child != NULL )
     {
@@ -428,6 +305,44 @@ HMM_Component::HMM_Component( Mat Component ) : GMM_Component(Component) {
     left_child = NULL;
     right_child = NULL;
     div = 0;
+}
+
+HMM_Component::HMM_Component(const HMM_Component& rhs) {
+    left_child = NULL;
+    right_child = NULL;
+    if(rhs.left_child)
+    {
+        left_child = new HMM_Component(*rhs.left_child);
+    }
+    if(rhs.right_child)
+    {
+        right_child = new HMM_Component(*rhs.right_child);
+    }
+    samples = rhs.samples;
+    div = rhs.div;
+}
+
+HMM_Component& HMM_Component::operator=(const HMM_Component& rhs) {
+    if(this != &rhs)
+    {
+        HMM_Component* tmp_left = NULL;
+        HMM_Component* tmp_right = NULL;
+        if(rhs.left_child)
+            tmp_left = new HMM_Component(*rhs.left_child);
+
+        if(rhs.right_child)
+            tmp_right = new HMM_Component(*rhs.right_child);
+
+        delete left_child;
+        delete right_child;
+
+        left_child = tmp_left;
+        right_child = tmp_right;
+
+        samples = rhs.samples;
+        div = rhs.div;
+    }
+    return *this;
 }
 
 HMM_Component::HMM_Component() {
