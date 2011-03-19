@@ -6,15 +6,15 @@ FIND_PACKAGE(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${OpenCV_LIBRARIES})
 
-add_executable(learn.bin learnmain.cpp hmm.cpp gmm.cpp gaussian.cpp grabcut.cpp graph.cpp shared.cpp maxflow.cpp)
+add_executable(learn.bin src/learnmain.cpp src/hmm.cpp src/gmm.cpp src/gaussian.cpp src/grabcut.cpp src/maxflow/graph.cpp src/shared.cpp src/maxflow/maxflow.cpp)
 target_link_libraries(learn.bin ${OpenCV_LIBS})
 target_link_libraries(learn.bin ${Boost_LIBRARIES})
 
-add_executable(test.bin testmain.cpp hmm.cpp gmm.cpp gaussian.cpp grabcut.cpp graph.cpp shared.cpp maxflow.cpp)
+add_executable(test.bin src/testmain.cpp src/hmm.cpp src/gmm.cpp src/gaussian.cpp src/grabcut.cpp src/maxflow/graph.cpp src/shared.cpp src/maxflow/maxflow.cpp)
 target_link_libraries(test.bin ${OpenCV_LIBS})
 target_link_libraries(test.bin ${Boost_LIBRARIES})
 
-add_executable(unittest.bin tests/test.cpp hmm.cpp gmm.cpp gaussian.cpp grabcut.cpp graph.cpp shared.cpp maxflow.cpp)
+add_executable(unittest.bin tests/test.cpp src/hmm.cpp src/gmm.cpp src/gaussian.cpp src/grabcut.cpp src/maxflow/graph.cpp src/shared.cpp src/maxflow/maxflow.cpp)
 target_link_libraries(unittest.bin ${OpenCV_LIBS})
 target_link_libraries(unittest.bin ${Boost_LIBRARIES})
 

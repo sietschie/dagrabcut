@@ -41,7 +41,7 @@
 
 //#include "precomp.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "graph.h"
+#include "maxflow/graph.h"
 #include <limits>
 
 #include <iostream>

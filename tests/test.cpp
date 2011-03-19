@@ -2,7 +2,7 @@
 #define BOOST_TEST_MODULE MyTest
 #include <boost/test/unit_test.hpp>
 #include <opencv2/core/core.hpp>
-#include "../gmm.hpp"
+#include "../src/gmm.hpp"
 
 struct Data
 {
