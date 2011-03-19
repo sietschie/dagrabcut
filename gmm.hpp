@@ -3,6 +3,7 @@
 
 #include <opencv2/core/core.hpp>
 #include "gaussian.hpp"
+#include "mm.hpp"
 
 using namespace cv;
 
@@ -16,32 +17,9 @@ public:
 
 };
 
-class GMM
-{
+class GMM : public MM<GMM_Component> {
 public:
-    static const int dim = 3;
-
-    GMM( Mat& _model, int _componensCount = 5);
-    double operator()( const Vec3d color ) const;
-    double operator()( int ci, const Vec3d color ) const;
-    int whichComponent( const Vec3d color ) const;
-
-    void initLearning();
-    void addSample( int ci, const Vec3d color );
-    void endLearning();
-    Mat getModel();
-    int getComponentsCount();
-
-    double KLdiv(const GMM& rhs);
-    double KLsym(GMM& rhs);
-
-private:
-    Mat model;
-    int componentsCount;
-    std::vector<GMM_Component*> components;
-    void calcInverseCovAndDeterm( int ci );
-    std::vector<std::vector<cv::Vec3b> > samples;
-    Mat updateModel();
+    GMM():MM<GMM_Component>() {}
 };
 
 #endif /* _GMM_H_ */

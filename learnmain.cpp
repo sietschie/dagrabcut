@@ -56,12 +56,16 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model, int nr_gaussians = 5
 
     cout << "start learning GMM..." << endl;
 
-    GMM gmm(model, nr_gaussians);
+    GMM gmm;
+    gmm.setComponentsCount(nr_gaussians);
 
     gmm.initLearning();
     for( int i = 0; i < (int)samples.size(); i++ )
         gmm.addSample( labels.at<int>(i,0), samples[i] );
     gmm.endLearning();
+    model = gmm.getModel();
+
+    assert(model.cols == nr_gaussians);
 }
 
 po::variables_map parseCommandline(int argc, char** argv)
@@ -220,7 +224,7 @@ int main( int argc, char** argv )
     fgdHmm.normalize_weights();
     bgdHmm.normalize_weights();
 
-    while( fgdHmm.components.size() > vm["cluster"].as<int>())
+    while( fgdHmm.getComponentsCount() > vm["cluster"].as<int>())
     {
         fgdHmm.cluster_once();
         bgdHmm.cluster_once();
