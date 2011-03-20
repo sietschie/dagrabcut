@@ -14,7 +14,7 @@ add_executable(test.bin src/testmain.cpp src/hmm.cpp src/gmm.cpp src/gaussian.cp
 target_link_libraries(test.bin ${OpenCV_LIBS})
 target_link_libraries(test.bin ${Boost_LIBRARIES})
 
-add_executable(unittest.bin tests/test.cpp src/hmm.cpp src/gmm.cpp src/gaussian.cpp src/grabcut.cpp src/maxflow/graph.cpp src/shared.cpp src/maxflow/maxflow.cpp)
+add_executable(unittest.bin tests/test.cpp tests/test_hmm.cpp src/hmm.cpp src/gmm.cpp src/gaussian.cpp src/grabcut.cpp src/maxflow/graph.cpp src/shared.cpp src/maxflow/maxflow.cpp)
 target_link_libraries(unittest.bin ${OpenCV_LIBS})
 target_link_libraries(unittest.bin ${Boost_LIBRARIES})
 
