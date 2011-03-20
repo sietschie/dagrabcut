@@ -71,8 +71,6 @@ void GCApplication::showImage() const
     else
     {
         getBinMask( mask, binMask );
-        FileStorage fs("test2.yml", FileStorage::WRITE);
-        fs << "mask" << binMask;
 
         image->copyTo( res, binMask );
     }
