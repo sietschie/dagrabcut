@@ -7,8 +7,8 @@ class Gaussian {
 public:
     cv::Mat mean;
     cv::Mat cov;
-    double KLdiv(Gaussian& g2);
-    double KLsym(Gaussian& g2);
+    double KLdiv(const Gaussian& g2);
+    double KLsym(const Gaussian& g2);
     Gaussian();
     Gaussian(const Gaussian& rhs);
     void compute_from_samples(std::vector<cv::Vec3b> samples);

@@ -48,7 +48,7 @@
 
 GMM_Component::GMM_Component() {}
 
-GMM_Component::GMM_Component(Mat component) {
+GMM_Component::GMM_Component(const Mat &component) {
     int c=0;
     gauss.mean = Mat(3,1, CV_64FC1);
     for(int j=0; j < 3; j++)

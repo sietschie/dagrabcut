@@ -26,7 +26,7 @@ public:
     double KLsym(MM& rhs);
 
 protected:
-    std::vector<Component*> components;
+    std::vector<Component> components;
     std::vector<std::vector<cv::Vec3b> > samples;
 
 };

@@ -31,7 +31,6 @@ public:
     HMM() : MM<HMM_Component>() {}
     ~HMM();
 
-    void free_components();
     friend void readHMM(const cv::FileNode& fn, HMM& hmm);
     friend cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM& hmm);
 };

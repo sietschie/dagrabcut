@@ -13,7 +13,7 @@ public:
     double weight;
     Gaussian gauss;
     GMM_Component();
-    GMM_Component(cv::Mat component );
+    GMM_Component(const cv::Mat &component );
 
 };
 

@@ -13,8 +13,6 @@ void MM<Component>::setModel(const Mat& model)
 {
     while(components.size() != 0)
     {
-        Component *c = components.back();
-        delete c;
         components.pop_back();
     }
 
@@ -38,9 +36,9 @@ void MM<Component>::setModel(const Mat& model)
                 gauss.cov.at<double>(j,k) = model.at<double>(c,i);
                 c++;
             }
-        Component *MMc = new Component;
-        MMc->gauss = gauss;
-        MMc->weight = model.at<double>(c,i);
+        Component MMc;
+        MMc.gauss = gauss;
+        MMc.weight = model.at<double>(c,i);
         components.push_back(MMc);
     }
 }
@@ -53,17 +51,15 @@ void MM<Component>::setComponentsCount(int size)
 
     while( components.size() < size ) 
     {
-        Component *MMc = new Component;
-        MMc->gauss.mean = Mat(dim,1, CV_64FC1);
-        MMc->gauss.cov = Mat(dim,dim, CV_64FC1);
-        MMc->weight = 0.0;
+        Component MMc;
+        MMc.gauss.mean = Mat(dim,1, CV_64FC1);
+        MMc.gauss.cov = Mat(dim,dim, CV_64FC1);
+        MMc.weight = 0.0;
         components.push_back(MMc);
     }
 
     while( components.size() > size )
     {
-        Component *c = components.back();
-        delete c;
         components.pop_back();
     }
 }
@@ -87,7 +83,7 @@ Mat MM<Component>::getModel()
         int c=0;
         for(int j=0; j < 3; j++)
         {
-            double value = components[i]->gauss.mean.template at<double>(j,0);
+            double value = components[i].gauss.mean.template at<double>(j,0);
             model.at<double>(c,i) = value;
             c++;
         }
@@ -95,10 +91,10 @@ Mat MM<Component>::getModel()
         for(int j=0; j<3; j++)
             for(int k=0; k<3; k++)
             {
-                model.at<double>(c,i) = components[i]->gauss.cov.template at<double>(j,k);
+                model.at<double>(c,i) = components[i].gauss.cov.template at<double>(j,k);
                 c++;
             }
-        model.at<double>(c,i) = components[i]->weight;
+        model.at<double>(c,i) = components[i].weight;
     }
     return model;
 }
@@ -108,7 +104,7 @@ double MM<Component>::operator()( const Vec3d color ) const
 {
     double res = 0;
     for( int ci = 0; ci < components.size(); ci++ )
-        res += components[ci]->weight * (*this)(ci, color );
+        res += components[ci].weight * (*this)(ci, color );
     return res;
 }
 
@@ -116,26 +112,26 @@ template <class Component>
 double MM<Component>::operator()( int ci, const Vec3d color ) const
 {
     double res = 0;
-    Component* MMc = components[ci];
-    if( MMc->weight > 0 )
+    const Component &MMc = components[ci];
+    if( MMc.weight > 0 )
     {
-        double covDeterms = determinant(MMc->gauss.cov);
+        double covDeterms = determinant(MMc.gauss.cov);
         //cout << "ci: " << ci << "  covDeterms: " << covDeterms << endl;
-        //cout << MMc->weight << endl;
-        //cout << MMc->gauss.mean << endl;
-        //cout << MMc->gauss.cov << endl;
+        //cout << MMc.weight << endl;
+        //cout << MMc.gauss.mean << endl;
+        //cout << MMc.gauss.cov << endl;
         if(covDeterms != covDeterms)
         {
             std::cout << "covDeterms: " << covDeterms << std::endl;
-            std::cout << MMc->gauss.cov << std::endl;
+            std::cout << MMc.gauss.cov << std::endl;
         }
         CV_Assert( covDeterms > std::numeric_limits<double>::epsilon() );
         Vec3d diff = color;
-        diff[0] -= MMc->gauss.mean.template at<double>(0,0);
-        diff[1] -= MMc->gauss.mean.template at<double>(1,0);
-        diff[2] -= MMc->gauss.mean.template at<double>(2,0);
+        diff[0] -= MMc.gauss.mean.template at<double>(0,0);
+        diff[1] -= MMc.gauss.mean.template at<double>(1,0);
+        diff[2] -= MMc.gauss.mean.template at<double>(2,0);
 
-        Mat inverseCovs = MMc->gauss.cov.inv();
+        Mat inverseCovs = MMc.gauss.cov.inv();
 
         double mult = 0.0;
         for(int i=0; i<3; i++)
@@ -201,8 +197,8 @@ void MM<Component>::endLearning()
 
     for(int i=0; i<samples.size(); i++)
     {
-        components[i]->gauss.compute_from_samples(samples[i]);
-        components[i]->weight = samples[i].size() / (double) numSamples;
+        components[i].gauss.compute_from_samples(samples[i]);
+        components[i].weight = samples[i].size() / (double) numSamples;
 
     }
 }
@@ -223,7 +219,7 @@ double MM<Component>::KLdiv(const MM& rhs)
         double min = 10e+100; //TODO: richtig grossen wert aus limits nehmen
         for(int j=0;j<rhs.components.size();j++)
         {
-            double div = components[i]->gauss.KLdiv(rhs.components[j]->gauss) - log(rhs.components[j]->weight);
+            double div = components[i].gauss.KLdiv(rhs.components[j].gauss) - log(rhs.components[j].weight);
             if( div < min )
             {
                 min = div;
@@ -236,11 +232,11 @@ double MM<Component>::KLdiv(const MM& rhs)
     double div = 0.0;
     for(int i=0;i<components.size();i++)
     {
-        if( components[i]->weight != 0 )
+        if( components[i].weight != 0 )
         {
-            double kl = components[i]->gauss.KLdiv(rhs.components[mapping[i]]->gauss);
-            double summand =  log( components[i]->weight / rhs.components[mapping[i]]->weight);
-            div += components[i]->weight * (kl + summand);
+            double kl = components[i].gauss.KLdiv(rhs.components[mapping[i]].gauss);
+            double summand =  log( components[i].weight / rhs.components[mapping[i]].weight);
+            div += components[i].weight * (kl + summand);
         }
     }
     return div;

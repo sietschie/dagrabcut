@@ -241,8 +241,5 @@ int main( int argc, char** argv )
     fs2 << "bgdHmm" << bgdHmm;
     fs2.release();
 
-    fgdHmm.free_components();
-    bgdHmm.free_components();
-
     return 0;
 }
