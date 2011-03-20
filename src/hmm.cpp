@@ -163,12 +163,12 @@ void HMM::cluster_once()
 
 }
 
-void HMM::add_model(HMM &model)
+void HMM::addModel(const HMM &model)
 {
     components.insert(components.end(), model.components.begin(), model.components.end());
 }
 
-void HMM::add_model(Mat &model, const Mat &mask, const Mat &img, int dim)
+void HMM::addModel(const Mat &model, const Mat &mask, const Mat &img, int dim)
 {
     int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
 
@@ -193,41 +193,13 @@ void HMM::add_model(Mat &model, const Mat &mask, const Mat &img, int dim)
     }
 }
 
-void HMM::add_model( Mat &model, const Mat &compIdxs, const Mat &mask, const Mat &img, int dim) {
+void HMM::addModel( const Mat &model, const Mat &compIdxs, const Mat &mask, const Mat &img, int dim) {
     int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
 
-    int componentsCount = model.cols / modelsize;
-
-    //std::cout << "componentsCount: " << componentsCount << std::endl;
-
-    double *coefs = model.ptr<double>(0);
-    double *mean = coefs + componentsCount;
-    double *cov = mean + dim*componentsCount;
-
-    for(int i = 0; i<componentsCount; i++)
+    for(int i = 0; i< model.cols; i++)
     {
-        HMM_Component hmmc;
-        hmmc.weight = coefs[i];
-
-        double *cpy_mean = mean + (i*dim);
-        //std::copy(mean + (i*dim), mean + (i*dim) + dim, cpy_mean);
-        hmmc.gauss.mean = Mat(dim, 1, CV_64F);
-        for(int j=0; j<dim; j++)
-        {
-            hmmc.gauss.mean.at<double>(j,0) = cpy_mean[j];
-        }
-        //hmmc.gauss.mean = Mat(dim, 1, CV_64F, cpy_mean);
-
-        double *cpy_cov = cov + (i*dim*dim);
-        //std::copy(cov + (i*dim*dim), cov + (i*dim*dim) + dim*dim, cpy_cov);
-        hmmc.gauss.cov = Mat(dim,dim, CV_64F);
-        for(int j=0; j<dim; j++)
-            for(int k=0; k<dim; k++)
-            {
-                hmmc.gauss.cov.at<double>(j,k) = cpy_cov[j + k * dim];
-            }
-
-        //TODO: muss der speicher wieder freigegeben werden?
+        HMM_Component hmmc(model.col(i));
+        components.push_back(hmmc);
 
         Point p;
         for( p.y = 0; p.y < mask.rows; p.y++ )

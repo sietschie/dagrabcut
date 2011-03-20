@@ -24,9 +24,9 @@ public:
 class HMM : public MM<HMM_Component> {
 public:
     void normalize_weights();
-    void add_model(HMM &hmm);
-    void add_model(cv::Mat& gmm, const cv::Mat& compIdxs, const cv::Mat& mask, const cv::Mat& img, int dim = 3);
-    void add_model(cv::Mat& gmm, const cv::Mat& mask, const cv::Mat& img, int dim = 3);
+    void addModel(const HMM &hmm);
+    void addModel(const cv::Mat& gmm, const cv::Mat& compIdxs, const cv::Mat& mask, const cv::Mat& img, int dim = 3);
+    void addModel(const cv::Mat& gmm, const cv::Mat& mask, const cv::Mat& img, int dim = 3);
     void cluster_once();
     HMM() : MM<HMM_Component>() {}
     ~HMM();

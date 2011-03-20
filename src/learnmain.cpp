@@ -164,8 +164,8 @@ int main( int argc, char** argv )
 
         //Mat binary_mask = mask & 1;
         //Mat binary_mask = mask & class_number;
-        cur_fgdHmm.add_model(fgdModel, binary_mask, image);
-        cur_bgdHmm.add_model(bgdModel, 1 - binary_mask, image);
+        cur_fgdHmm.addModel(fgdModel, binary_mask, image);
+        cur_bgdHmm.addModel(bgdModel, 1 - binary_mask, image);
 
         //TODO: precompute the model, maybe cache it?
 
@@ -214,9 +214,9 @@ int main( int argc, char** argv )
 
 
     for(int i=0; i<fgdHmms.size(); i++)
-        fgdHmm.add_model(fgdHmms[i]);
+        fgdHmm.addModel(fgdHmms[i]);
     for(int i=0; i<bgdHmms.size(); i++)
-        bgdHmm.add_model(bgdHmms[i]);
+        bgdHmm.addModel(bgdHmms[i]);
 
     cout << "KLdiv: " << fgdHmm.KLdiv(bgdHmm) << endl;
     cout << "KLdiv: " << bgdHmm.KLdiv(fgdHmm) << endl;
