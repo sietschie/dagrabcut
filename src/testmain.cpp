@@ -71,8 +71,6 @@ void GCApplication::showImage() const
     else
     {
         getBinMask( mask, binMask );
-        FileStorage fs("test2.yml", FileStorage::WRITE);
-        fs << "mask" << binMask;
 
         image->copyTo( res, binMask );
     }
@@ -245,8 +243,8 @@ int main( int argc, char** argv )
     cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate;
 
     {
-        GMM i(input_fgdModel);
-        GMM r(fgdModel);
+        GMM i; i.setModel(input_fgdModel);
+        GMM r; r.setModel(fgdModel);
         double kl_div_i_r = i.KLdiv(r);
         double kl_div_r_i = r.KLdiv(i);
         double kl_sym = i.KLsym(r);
@@ -258,8 +256,8 @@ int main( int argc, char** argv )
 
 
     {
-        GMM i(input_bgdModel);
-        GMM r(bgdModel);
+        GMM i; i.setModel(input_bgdModel);
+        GMM r; r.setModel(bgdModel);
         double kl_div_i_r = i.KLdiv(r);
         double kl_div_r_i = r.KLdiv(i);
         double kl_sym = i.KLsym(r);

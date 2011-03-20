@@ -4,6 +4,23 @@
 using namespace cv;
 using namespace std;
 
+Gaussian& Gaussian::operator=(const Gaussian& rhs)
+{
+    if(this != &rhs)
+    {
+        cov = rhs.cov.clone();
+        mean = rhs.mean.clone();
+    }
+    return *this;
+}
+
+Gaussian::Gaussian(const Gaussian& rhs)
+{
+    cov = rhs.cov.clone();
+    mean = rhs.mean.clone();
+}
+
+
 cv::FileStorage& operator<<(cv::FileStorage& fs, const Gaussian& gauss)
 {
     fs << "{";
@@ -19,7 +36,7 @@ void readGaussian(const cv::FileNode& fn, Gaussian& gauss)
     fn["cov"] >> gauss.cov;
 }
 
-double Gaussian::KLdiv(Gaussian &g2) {
+double Gaussian::KLdiv(const Gaussian &g2) {
     //  1/2 * (trace(cov2_inv cov1) + (mean2 - mean1)^T cov2_inv (mean2 - mean1) - log_e (det_cov1 / det_cov2) - dim
     // source: wikipedia, jMEF
 
@@ -39,7 +56,7 @@ double Gaussian::KLdiv(Gaussian &g2) {
     return kldiv;
 }
 
-double Gaussian::KLsym(Gaussian &g2) {
+double Gaussian::KLsym(const Gaussian &g2) {
     // (mean2 - mean1)^T (cov1_inv + cov2_inv) (mean2 - mean1) + trace( cov1_inv cov2 + cov1 cov2_inv ) - 2dim
     // from http://www.sciweavers.org/files/docs/2358/icassp_cvd_poster_pdf_4a383d1fb0.pdf
 

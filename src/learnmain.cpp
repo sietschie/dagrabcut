@@ -33,12 +33,16 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model, int nr_gaussians = 5
 
     cout << "start learning GMM..." << endl;
 
-    GMM gmm(model, nr_gaussians);
+    GMM gmm;
+    gmm.setComponentsCount(nr_gaussians);
 
     gmm.initLearning();
     for( int i = 0; i < (int)samples.size(); i++ )
         gmm.addSample( labels.at<int>(i,0), samples[i] );
     gmm.endLearning();
+    model = gmm.getModel();
+
+    assert(model.cols == nr_gaussians);
 }
 
 po::variables_map parseCommandline(int argc, char** argv)
@@ -49,6 +53,7 @@ po::variables_map parseCommandline(int argc, char** argv)
         //("max-iterations,m", po::value<int>()->default_value(100), "maximum number of iterations")
         //("interactive,i", "interactive segmentation")
         ("gaussians,g", po::value<int>()->default_value(5), "number of gaussians used for the gmms")
+        ("cluster,c", po::value<int>()->default_value(5), "number of gaussians used for the hmm")
     ;
 
     po::options_description hidden("Hidden options");

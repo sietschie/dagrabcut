@@ -41,7 +41,7 @@
 
 //#include "precomp.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "gcgraph.hpp"
+#include "maxflow/graph.h"
 #include <limits>
 
 #include <iostream>
@@ -246,7 +246,9 @@ void assignGMMsComponents( const Mat& img, const Mat& mask, const GMM& bgdGMM, c
 void learnGMMs( const Mat& img, const Mat& mask, const Mat& compIdxs, GMM& bgdGMM, GMM& fgdGMM )
 {
     int componentsCount = 5;
+    bgdGMM.setComponentsCount(5);
     bgdGMM.initLearning();
+    fgdGMM.setComponentsCount(5);
     fgdGMM.initLearning();
     Point p;
     for( int ci = 0; ci < componentsCount; ci++ )
@@ -274,18 +276,15 @@ void learnGMMs( const Mat& img, const Mat& mask, const Mat& compIdxs, GMM& bgdGM
 */
 void constructGCGraph( const Mat& img, const Mat& mask, const GMM& bgdGMM, const GMM& fgdGMM, double lambda,
                        const Mat& leftW, const Mat& upleftW, const Mat& upW, const Mat& uprightW,
-                       GCGraph<double>& graph )
+                       Graph<double, double, double>& graph )
 {
-    int vtxCount = img.cols*img.rows,
-        edgeCount = 2*(4*img.cols*img.rows - 3*(img.cols + img.rows) + 2);
-    graph.create(vtxCount, edgeCount);
     Point p;
     for( p.y = 0; p.y < img.rows; p.y++ )
     {
         for( p.x = 0; p.x < img.cols; p.x++)
         {
             // add node
-            int vtxIdx = graph.addVtx();
+            int vtxIdx = graph.add_node();
             Vec3b color = img.at<Vec3b>(p);
 
             // set t-weights
@@ -305,28 +304,28 @@ void constructGCGraph( const Mat& img, const Mat& mask, const GMM& bgdGMM, const
                 fromSource = lambda;
                 toSink = 0;
             }
-            graph.addTermWeights( vtxIdx, fromSource, toSink );
+            graph.add_tweights( vtxIdx, fromSource, toSink );
 
             // set n-weights
             if( p.x>0 )
             {
                 double w = leftW.at<double>(p);
-                graph.addEdges( vtxIdx, vtxIdx-1, w, w );
+                graph.add_edge( vtxIdx, vtxIdx-1, w, w );
             }
             if( p.x>0 && p.y>0 )
             {
                 double w = upleftW.at<double>(p);
-                graph.addEdges( vtxIdx, vtxIdx-img.cols-1, w, w );
+                graph.add_edge( vtxIdx, vtxIdx-img.cols-1, w, w );
             }
             if( p.y>0 )
             {
                 double w = upW.at<double>(p);
-                graph.addEdges( vtxIdx, vtxIdx-img.cols, w, w );
+                graph.add_edge( vtxIdx, vtxIdx-img.cols, w, w );
             }
             if( p.x<img.cols-1 && p.y>0 )
             {
                 double w = uprightW.at<double>(p);
-                graph.addEdges( vtxIdx, vtxIdx-img.cols+1, w, w );
+                graph.add_edge( vtxIdx, vtxIdx-img.cols+1, w, w );
             }
         }
     }
@@ -335,9 +334,9 @@ void constructGCGraph( const Mat& img, const Mat& mask, const GMM& bgdGMM, const
 /*
   Estimate segmentation using MaxFlow algorithm
 */
-double estimateSegmentation( GCGraph<double>& graph, Mat& mask )
+double estimateSegmentation( Graph<double, double, double>& graph, Mat& mask )
 {
-    double flow = graph.maxFlow();
+    double flow = graph.maxflow();
 
     Point p;
     for( p.y = 0; p.y < mask.rows; p.y++ )
@@ -346,7 +345,7 @@ double estimateSegmentation( GCGraph<double>& graph, Mat& mask )
         {
             if( mask.at<uchar>(p) == GC_PR_BGD || mask.at<uchar>(p) == GC_PR_FGD )
             {
-                if( graph.inSourceSegment( p.y*mask.cols+p.x /*vertex index*/ ) )
+                if( graph.what_segment( p.y*mask.cols+p.x /*vertex index*/ ) == Graph<double, double, double>::SOURCE )
                     mask.at<uchar>(p) = GC_PR_FGD;
                 else
                     mask.at<uchar>(p) = GC_PR_BGD;
@@ -365,7 +364,10 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
     if( img.type() != CV_8UC3 )
         CV_Error( CV_StsBadArg, "image mush have CV_8UC3 type" );
 
-    GMM bgdGMM( bgdModel ), fgdGMM( fgdModel );
+    GMM bgdGMM, fgdGMM;
+    bgdGMM.setModel(bgdModel);
+    fgdGMM.setModel(fgdModel);
+
     Mat compIdxs( img.size(), CV_32SC1 );
 
     if( mode == GC_INIT_WITH_RECT || mode == GC_INIT_WITH_MASK )
@@ -416,19 +418,27 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
     double current_flow = 100.0;
     double eps = 0.001;
 
+    int vtxCount = img.cols*img.rows,
+        edgeCount = 2*(4*img.cols*img.rows - 3*(img.cols + img.rows) + 2);
+
     for( int i = 0; i < iterCount; i++ )
     {
-        GCGraph<double> graph;
+        Graph<double, double, double> graph(vtxCount,edgeCount);
         assignGMMsComponents( img, mask, bgdGMM, fgdGMM, compIdxs );
         learnGMMs( img, mask, compIdxs, bgdGMM, fgdGMM );
         constructGCGraph(img, mask, bgdGMM, fgdGMM, lambda, leftW, upleftW, upW, uprightW, graph );
         current_flow = estimateSegmentation( graph, mask );
-        cout << " diff flow:" << abs(last_flow - current_flow) << " " << flush;
+        std::cout << " diff flow:" << abs(last_flow - current_flow) << " " << std::flush;
 
         if( abs(last_flow - current_flow) < eps )
             break;
 
         last_flow = current_flow;
     }
+    Mat new_bgdModel = bgdGMM.getModel();
+    Mat new_fgdModel = fgdGMM.getModel();
+
+    new_bgdModel.copyTo(bgdModel);
+    new_fgdModel.copyTo(fgdModel);
 }
 

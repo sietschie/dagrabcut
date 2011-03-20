@@ -1,8 +1,8 @@
 program_NAME := learn.bin
-program_OBJS := learnmain.o gaussian.o grabcut.o gmm.o shared.o
+program_OBJS := learnmain.o gaussian.o grabcut.o gmm.o shared.o graph.o maxflow.o
 
 program2_NAME := test.bin
-program2_OBJS := grabcut.o testmain.o gaussian.o gmm.o shared.o
+program2_OBJS := grabcut.o testmain.o gaussian.o gmm.o shared.o graph.o maxflow.o
 
 CC=g++
 
@@ -17,8 +17,12 @@ $(program_NAME): $(program_OBJS)
 $(program2_NAME): $(program2_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $(program2_NAME)
 
-.cpp.o:
+%.o: %.cpp
 	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -MM $*.cpp > $*.d
 
 clean:
-	rm -rf *o *.bin 
+	rm -rf *o *.bin *.d
+
+-include $(program_OBJS:.o=.d)
+-include $(program2_OBJS:.o=.d)
