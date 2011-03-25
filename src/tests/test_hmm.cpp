@@ -1,4 +1,3 @@
-#define BOOST_TEST_MODULE MyTestHmm
 #include <iostream>
 #include <boost/test/unit_test.hpp>
 #include <opencv2/core/core.hpp>

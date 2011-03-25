@@ -3,7 +3,7 @@ FIND_PACKAGE(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${OpenCV_LIBRARIES})
 
-set( unittest_SRCS test.cpp test_hmm.cpp )
+set( unittest_SRCS test.cpp test_hmm.cpp test_structuretensor.cpp )
 add_executable(unittest.bin ${unittest_SRCS} )
 target_link_libraries(unittest.bin ${OpenCV_LIBS})
 target_link_libraries(unittest.bin ${Boost_LIBRARIES})
