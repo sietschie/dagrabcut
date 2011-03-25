@@ -4,9 +4,9 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
-#include "hmm.hpp"
-#include "grabcut.hpp"
-#include "shared.hpp"
+#include "../lib/hmm.hpp"
+#include "../lib/grabcut.hpp"
+#include "../lib/shared.hpp"
 
 using namespace std;
 using namespace cv;

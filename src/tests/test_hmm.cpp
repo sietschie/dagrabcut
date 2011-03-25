@@ -2,9 +2,9 @@
 #include <iostream>
 #include <boost/test/unit_test.hpp>
 #include <opencv2/core/core.hpp>
-#include "../src/gmm.hpp"
-#include "../src/hmm.hpp"
-#include "../src/gaussian.hpp"
+#include "../lib/gmm.hpp"
+#include "../lib/hmm.hpp"
+#include "../lib/gaussian.hpp"
 
 struct Data
 {

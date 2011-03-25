@@ -1,9 +1,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
-#include "grabcut.hpp"
-#include "hmm.hpp"
-#include "shared.hpp"
+#include "../lib/grabcut.hpp"
+#include "../lib/hmm.hpp"
+#include "../lib/shared.hpp"
 
 #include <iostream>
 #include <boost/program_options.hpp>
