@@ -6,7 +6,9 @@
 
 class StructureTensor{
 public:
+    StructureTensor();
     StructureTensor(const cv::Vec3d& t);
+    StructureTensor(const cv::Mat& m);
     cv::Mat getMatrix();
 private:
     cv::Mat st;
@@ -29,12 +31,15 @@ public:
  */
     StructureTensor getTensor(int x, int y);
     cv::Mat getImage();
+    cv::Mat getLabels();
+    cv::vector<StructureTensor> getCenters();
 
 private:
     std::vector<StructureTensor> tensors;
     cv::Mat blurredstmat;
-    kmeans( int K, cv::TermCriteria criteria, int attempts);
+    double kmeans( int K, cv::TermCriteria criteria, int attempts);
     cv::Mat best_labels;
+    std::vector<StructureTensor> best_centers;
 };
 
 
@@ -44,7 +49,7 @@ private:
  * @param l first structure tensor
  * @param r second structure tensor
  */
-double distance(StructureTensor& l, StructureTensor& r);
+double distance2(StructureTensor& l, StructureTensor& r);
 
 /**
  * Computes the mean structure tensor given a list of structure tensors 
