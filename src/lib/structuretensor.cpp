@@ -13,8 +13,6 @@ StructureTensorImage::StructureTensorImage(const cv::Mat& image, double sigma)
     cv::Mat xgrad;
     cv::Sobel(image, xgrad, CV_64F, 1, 0, 3);
 
-    cout << "Sobel.type() = " << xgrad.type() << endl;
-
     cv::Mat ygrad;
     cv::Sobel(image, ygrad, CV_64F, 0, 1, 3);
 
@@ -22,7 +20,6 @@ StructureTensorImage::StructureTensorImage(const cv::Mat& image, double sigma)
     // compute structure tensor for each pixel
     cv::Mat stmat(image.rows, image.cols, CV_64FC3, Scalar(0,0,0));
 
-    cout << "stmat.type() = " << stmat.type() << endl;
     cv::Point p;
     for( p.y = 0; p.y < stmat.rows; p.y++ )
     {

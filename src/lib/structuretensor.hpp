@@ -33,6 +33,8 @@ public:
 private:
     std::vector<StructureTensor> tensors;
     cv::Mat blurredstmat;
+    kmeans( int K, cv::TermCriteria criteria, int attempts);
+    cv::Mat best_labels;
 };
 
 
