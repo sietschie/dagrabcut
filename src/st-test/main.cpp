@@ -105,8 +105,11 @@ int main( int argc, char** argv )
         gcapp.showImage();
         c = cvWaitKey(0);
 
-        Mat labels = sti.getLabels();
-        vector<StructureTensor> centers = sti.getCenters();
+        Mat labels;
+        const vector<StructureTensor> &tensors = sti.getAllTensors();
+        vector<StructureTensor> centers;
+
+        kmeans(tensors, 5, TermCriteria( CV_TERMCRIT_ITER, 10, 0.0), 3, labels, centers);
 
         Mat clusteredimage = image.clone();
 

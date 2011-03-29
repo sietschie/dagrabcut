@@ -7,6 +7,21 @@
 using namespace cv;
 using namespace std;
 
+vector<StructureTensor> StructureTensorImage::getAllTensors() const
+{
+    return tensors;
+}
+
+StructureTensor StructureTensorImage::getTensor(int x, int y) const
+{
+    assert( y < rows);
+    assert( x < cols);
+    assert( y >= 0);
+    assert( x >= 0);
+    return tensors[x * blurredstmat.rows + y];
+}
+
+
 StructureTensorImage::StructureTensorImage(const cv::Mat& image, double sigma)
 {
     // Compute Image gradient in both directions for each channel
@@ -15,6 +30,9 @@ StructureTensorImage::StructureTensorImage(const cv::Mat& image, double sigma)
 
     cv::Mat ygrad;
     cv::Sobel(image, ygrad, CV_64F, 0, 1, 3);
+
+    cols = image.cols;
+    rows = image.rows;
 
 
     // compute structure tensor for each pixel
@@ -71,19 +89,8 @@ StructureTensor::StructureTensor(const cv::Mat& m) {
     st = m.clone();
 }
 
-cv::Mat StructureTensor::getMatrix() {
+cv::Mat StructureTensor::getMatrix() const {
     return st;
-}
-
-cv::vector<StructureTensor> StructureTensorImage::getCenters()
-{
-    return best_centers;
-}
-cv::Mat StructureTensorImage::getLabels()
-{
-    int kMeansItCount = 5;
-    kmeans(5, TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 2);
-    return best_labels;
 }
 
 void matrix_sqrt(const Mat& src, Mat& res)
@@ -104,7 +111,7 @@ void matrix_sqrt(const Mat& src, Mat& res)
     res = eigenvectors * eval_mat * evec_inv;
 }
 
-double distance2(StructureTensor& stl, StructureTensor& str)
+double distance2(const StructureTensor& stl, const StructureTensor& str)
 {
     Mat l = stl.getMatrix();
     Mat r = str.getMatrix();
@@ -123,7 +130,7 @@ double distance2(StructureTensor& stl, StructureTensor& str)
     return dist;*/
 }
 
-StructureTensor mean(std::vector<StructureTensor>& list){
+StructureTensor compute_mean(const std::vector<StructureTensor>& list){
 
     Mat A(2,2,CV_64FC1,Scalar(0));
     Mat B(2,2,CV_64FC1,Scalar(0));
@@ -180,7 +187,7 @@ static void generateRandomCenter(StructureTensor &center, vector<StructureTensor
     center = tensors[rng.uniform(0, tensors.size())];
 }
 
-double StructureTensorImage::kmeans( int K, TermCriteria criteria, int attempts)
+double kmeans(const std::vector<StructureTensor> &tensors, int K, cv::TermCriteria criteria, int attempts, cv::Mat &best_labels, std::vector<StructureTensor> &best_centers)
 {
     int N = tensors.size();
 //    int dims = (data.rows > 1 ? data.cols : 1)*data.channels();
@@ -273,7 +280,7 @@ double StructureTensorImage::kmeans( int K, TermCriteria criteria, int attempts)
                 {
                     //cout << "clustered_tensors["<<k<<"].size() = " << clustered_tensors[k].size() << endl;
                     if( clustered_tensors[k].size() != 0 )
-                        centers[k] = mean(clustered_tensors[k]);
+                        centers[k] = compute_mean(clustered_tensors[k]);
                     else
                         generateRandomCenter(centers[k], tensors, rng);
 
@@ -323,3 +330,15 @@ double StructureTensorImage::kmeans( int K, TermCriteria criteria, int attempts)
     return best_compactness;
 }
 
+double compute_variance(const std::vector<StructureTensor>& list)
+{
+    StructureTensor mean = compute_mean(list);
+
+    double sum_dist = 0.0;
+    for(int i=0;i<list.size();i++)
+    {
+        double dist = distance2(list[i], mean);
+        sum_dist += dist * dist;
+    }
+    return sum_dist / list.size();
+}
