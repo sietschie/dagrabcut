@@ -1,50 +1,47 @@
 #include <iostream>
-#include "mm.hpp"
+#include "st_mm.hpp"
 
 using namespace cv;
 
 template <class Component>
-MM<Component>::MM()
+MSST_MM<Component>::MSST_MM()
 {
 }
 
 template <class Component>
-void MM<Component>::setModel(const Mat& model) 
+void MSST_MM<Component>::setModel(const Mat& model) 
 {
     while(components.size() != 0)
     {
         components.pop_back();
     }
 
+    assert(model.rows % 3 == 2);
+    int nr_scales = (model.rows - 2) / 3;
 
     for(int i=0; i<model.cols; i++)
     {
-        Gaussian gauss;
-        int c=0;
-        gauss.mean = Mat(dim,1, CV_64FC1);
-        for(int j=0; j < dim; j++)
+        int c = 0;
+        MSST_Gaussian gauss;
+        
+        for(int s=0; s<nr_scales; s++)
         {
-            double value = model.at<double>(c,i);
-            gauss.mean.at<double>(j,0) = value;
-            c++;
+            StructureTensor st(model.at<double>(c,i), model.at<double>(c+1,i), model.at<double>(c+2,i));
+            c += 3;
+            gauss.mean.push_back(st);
         }
+        gauss.cov = model.at<double>(c++,i);
 
-        gauss.cov = Mat(dim,dim, CV_64FC1);
-        for(int j=0; j<dim; j++)
-            for(int k=0; k<dim; k++)
-            {
-                gauss.cov.at<double>(j,k) = model.at<double>(c,i);
-                c++;
-            }
         Component MMc;
         MMc.gauss = gauss;
-        MMc.weight = model.at<double>(c,i);
+        MMc.weight = model.at<double>(c++,i);
         components.push_back(MMc);
+        assert(c == model.rows);
     }
 }
 
 template <class Component>
-void MM<Component>::setComponentsCount(int size)
+void MSST_MM<Component>::setComponentsCount(int size)
 {
     if( components.size() == size ) 
         return;
@@ -52,8 +49,6 @@ void MM<Component>::setComponentsCount(int size)
     while( components.size() < size ) 
     {
         Component MMc;
-        MMc.gauss.mean = Mat(dim,1, CV_64FC1);
-        MMc.gauss.cov = Mat(dim,dim, CV_64FC1);
         MMc.weight = 0.0;
         components.push_back(MMc);
     }
@@ -65,42 +60,40 @@ void MM<Component>::setComponentsCount(int size)
 }
 
 template <class Component>
-int MM<Component>::getComponentsCount()
+int MSST_MM<Component>::getComponentsCount()
 {
     return components.size();
 }
 
 template <class Component>
-Mat MM<Component>::getModel()
+Mat MSST_MM<Component>::getModel()
 {
-    const int modelSize = dim/*mean*/ + dim*dim/*covariance*/ + 1/*component weight*/;
+//    const int modelSize = dim/*mean*/ + dim*dim/*covariance*/ + 1/*component weight*/;
+    assert(components.size() > 0);
+
+    const int modelSize = components[0].gauss.mean.size() * 3 + 2;
     Mat model;
     model.create( modelSize, components.size(), CV_64FC1 );
     model.setTo(Scalar(0));
 
     for(int i=0; i<components.size(); i++) //TODO: iterator
     {
-        int c=0;
-        for(int j=0; j < 3; j++)
+        int c = 0;
+        for(int s=0; s<components[i].gauss.mean.size(); s++) //TODO: iterator
         {
-            double value = components[i].gauss.mean.template at<double>(j,0);
-            model.at<double>(c,i) = value;
-            c++;
+            model.at<double>(c++,i) = components[i].gauss.mean[s].getMatrix().template at<double>(0,0);
+            model.at<double>(c++,i) = components[i].gauss.mean[s].getMatrix().template at<double>(1,1);
+            model.at<double>(c++,i) = components[i].gauss.mean[s].getMatrix().template at<double>(1,0);
         }
-
-        for(int j=0; j<3; j++)
-            for(int k=0; k<3; k++)
-            {
-                model.at<double>(c,i) = components[i].gauss.cov.template at<double>(j,k);
-                c++;
-            }
-        model.at<double>(c,i) = components[i].weight;
+        model.at<double>(c++,i) = components[i].gauss.cov;
+        model.at<double>(c++,i) = components[i].weight;
+        assert(modelSize == c);
     }
     return model;
 }
 
 template <class Component>
-double MM<Component>::operator()( const Vec3d color ) const
+double MSST_MM<Component>::operator()( const vector<StructureTensor> color ) const
 {
     double res = 0;
     for( int ci = 0; ci < components.size(); ci++ )
@@ -109,13 +102,31 @@ double MM<Component>::operator()( const Vec3d color ) const
 }
 
 template <class Component>
-double MM<Component>::operator()( int ci, const Vec3d color ) const
+double MSST_MM<Component>::operator()( int ci, const vector<StructureTensor> color ) const
 {
     double res = 0;
     const Component &MMc = components[ci];
     if( MMc.weight > 0 )
     {
-        double covDeterms = determinant(MMc.gauss.cov);
+        double dist = MS_distance2(color, MMc.gauss.mean);
+//        std::cout << "dist = " << dist << std::endl;
+        double sqr_dist = dist * dist;
+
+        double mul = sqr_dist / (2 * MMc.gauss.cov);
+        res = exp(-mul) / (2 * M_PI * MMc.gauss.cov);
+//        double mul = sqr_dist / (2);
+//        res = exp(-mul) / (2 * M_PI);
+//        return exp(-dist*dist);        
+    }
+
+        // squared distance between ST_i and Input_ST
+        // divide by 2* variance 
+        // exponentiate
+        // multiply by 1/sqrt 2 pi variance
+
+
+//FIXME: fuer ST anpassen
+/*        double covDeterms = determinant(MMc.gauss.cov);
         //cout << "ci: " << ci << "  covDeterms: " << covDeterms << endl;
         //cout << MMc.weight << endl;
         //cout << MMc.gauss.mean << endl;
@@ -149,16 +160,15 @@ double MM<Component>::operator()( int ci, const Vec3d color ) const
         //double mult = diff[0]*(diff[0]*inverseCovs[0][0] + diff[1]*inverseCovs[1][0] + diff[2]*inverseCovs[2][0])
         //           + diff[1]*(diff[0]*inverseCovs[0][1] + diff[1]*inverseCovs[1][1] + diff[2]*inverseCovs[2][1])
         //           + diff[2]*(diff[0]*inverseCovs[0][2] + diff[1]*inverseCovs[1][2] + diff[2]*inverseCovs[2][2]);
-        res = 1.0f/sqrt(covDeterms * 8 * M_PI * M_PI * M_PI) * exp(-0.5f*mult);
-    }
+        res = 1.0f/sqrt(covDeterms) * exp(-0.5f*mult);*/
     return res;
 }
 
 template <class Component>
-int MM<Component>::whichComponent( const Vec3d color ) const
+int MSST_MM<Component>::whichComponent( const vector<StructureTensor> color ) const
 {
     int k = 0;
-    double max = 0;
+    double max = -100000000.0;
 
     for( int ci = 0; ci < components.size(); ci++ ) //TODO: iterator
     {
@@ -173,13 +183,15 @@ int MM<Component>::whichComponent( const Vec3d color ) const
 }
 
 template <class Component>
-void MM<Component>::initLearning()
+void MSST_MM<Component>::initLearning()
 {
     samples.resize(components.size()); //TODO: ist das noetig?
+    for(int i=0; i< samples.size(); i++)
+        samples[i].resize(0);
 }
 
 template <class Component>
-void MM<Component>::addSample( int ci, const Vec3d color )
+void MSST_MM<Component>::addSample( int ci, const vector<StructureTensor> color )
 {
     assert(ci < samples.size());
 
@@ -187,7 +199,7 @@ void MM<Component>::addSample( int ci, const Vec3d color )
 }
 
 template <class Component>
-void MM<Component>::endLearning()
+void MSST_MM<Component>::endLearning()
 {
     int numSamples = 0;
     for(int i=0; i<samples.size(); i++)
@@ -197,20 +209,24 @@ void MM<Component>::endLearning()
 
     for(int i=0; i<samples.size(); i++)
     {
-        components[i].gauss.compute_from_samples(samples[i]);
-        components[i].weight = samples[i].size() / (double) numSamples;
-
+        if(samples[i].size() == 0)
+        {
+            components[i].weight = 0.0;
+        } else {
+            components[i].gauss.compute_from_samples(samples[i]);
+            components[i].weight = samples[i].size() / (double) numSamples;
+        }
     }
 }
 
 template <class Component>
-double MM<Component>::KLsym(MM& rhs)
+double MSST_MM<Component>::KLsym(MSST_MM& rhs)
 {
     return KLdiv(rhs) + rhs.KLdiv(*this);
 }
 
 template <class Component>
-double MM<Component>::KLdiv(const MM& rhs)
+double MSST_MM<Component>::KLdiv(const MSST_MM& rhs)
 {
     vector<int> mapping(components.size());
     for(int i=0;i<components.size();i++)

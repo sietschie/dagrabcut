@@ -19,6 +19,16 @@ public:
 
 void readGaussian(const cv::FileNode& fn, ST_Gaussian& gauss);
 
+class MSST_Gaussian {
+public:
+    std::vector<StructureTensor> mean;
+    double cov;
+    double KLdiv(const MSST_Gaussian& g2);
+    double KLsym(const MSST_Gaussian& g2);
+    void compute_from_samples(std::vector<std::vector<StructureTensor> > samples);
+};
+
+
 #endif //ST_GAUSSIAN_HPP
 
 

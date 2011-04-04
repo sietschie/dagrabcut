@@ -9,9 +9,22 @@ public:
     StructureTensor();
     StructureTensor(const cv::Vec3d& t);
     StructureTensor(const cv::Mat& m);
+    StructureTensor(double p00, double p11, double p01_10);
     cv::Mat getMatrix() const;
 private:
     cv::Mat st;
+};
+
+// Multiscale
+class MSStructureTensorImage {
+public:
+    MSStructureTensorImage(const cv::Mat& image);
+    MSStructureTensorImage() {}
+    std::vector<StructureTensor> getTensor(int x, int y) const;
+    std::vector<std::vector<StructureTensor> > getAllTensors() const;
+    int cols, rows;
+protected:
+    std::vector<std::vector<StructureTensor> > tensors;
 };
 
 class StructureTensorImage {
@@ -39,6 +52,9 @@ private:
     cv::Mat blurredstmat;
 };
 
+double MSST_kmeans(const std::vector<std::vector<StructureTensor> > &tensors, int K, cv::TermCriteria criteria, int attempts, cv::Mat& best_labels, 
+std::vector<std::vector<StructureTensor> >& best_centers);
+
 double kmeans(const std::vector<StructureTensor> &tensors, int K, cv::TermCriteria criteria, int attempts, cv::Mat& best_labels, std::vector<StructureTensor>& best_centers);
 
 
@@ -49,6 +65,7 @@ double kmeans(const std::vector<StructureTensor> &tensors, int K, cv::TermCriter
  * @param r second structure tensor
  */
 double distance2(const StructureTensor& l, const StructureTensor& r);
+double MS_distance2(const std::vector<StructureTensor>& l, const std::vector<StructureTensor>& r);
 
 /**
  * Computes the mean structure tensor given a list of structure tensors 
@@ -56,6 +73,7 @@ double distance2(const StructureTensor& l, const StructureTensor& r);
  * @param list vector of structure tensors
  */
 StructureTensor compute_mean(const std::vector<StructureTensor>& list);
+std::vector<StructureTensor> MS_compute_mean(const std::vector<std::vector<StructureTensor> >& list);
 
 /**
  * Computes the variance given a list of structure tensors 
@@ -63,5 +81,6 @@ StructureTensor compute_mean(const std::vector<StructureTensor>& list);
  * @param list vector of structure tensors
  */
 double compute_variance(const std::vector<StructureTensor>& list);
+double MS_compute_variance(const std::vector<std::vector<StructureTensor> >& list);
 
 #endif //STRUCTURETENSOR_HPP

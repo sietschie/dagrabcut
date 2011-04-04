@@ -20,6 +20,12 @@ ST_Gaussian::ST_Gaussian(const ST_Gaussian& rhs)
     mean = rhs.mean.clone();
 }
 
+ST_Gaussian::ST_Gaussian() {
+    cov.create(1,1,CV_64FC1);
+    mean.create(2,2,CV_64FC1);
+}
+
+
 
 cv::FileStorage& operator<<(cv::FileStorage& fs, const ST_Gaussian& gauss)
 {
@@ -90,10 +96,8 @@ double ST_Gaussian::KLsym(const ST_Gaussian &g2) {
     return 0.0;
 }
 
-ST_Gaussian::ST_Gaussian() {}
-
 void ST_Gaussian::compute_from_samples(vector<StructureTensor> samples) {
-    std::cout << "samples.size() = " << samples.size() << std::endl;
+//    std::cout << "samples.size() = " << samples.size() << std::endl;
     mean = Mat::zeros(2, 2, CV_64F);
     cov = Mat::zeros(1, 1, CV_64F);
 
@@ -116,5 +120,20 @@ ST_Gaussian::~ST_Gaussian() {
 //    delete mean.ptr<double>(0);
 //    delete cov.ptr<double>(0);
 }
+
+double MSST_Gaussian::KLdiv(const MSST_Gaussian& g2) { assert(1); return 0.0; }
+double MSST_Gaussian::KLsym(const MSST_Gaussian& g2) { assert(1); return 0.0; }
+
+void MSST_Gaussian::compute_from_samples(std::vector<std::vector<StructureTensor> > samples) {
+//    std::cout << "samples.size() = " << samples.size() << std::endl;
+
+    mean = MS_compute_mean(samples);
+    cov = MS_compute_variance(samples);
+
+
+    assert(cov != 0.0);
+
+}
+
 
 
