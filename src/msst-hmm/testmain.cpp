@@ -1,9 +1,8 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
-#include "../lib/structuretensor.hpp"
-#include "../lib/gmm.hpp"
-#include "../lib/cmsst_grabcut.hpp"
+#include "../lib/grabcut.hpp"
+#include "../lib/hmm.hpp"
 #include "../lib/shared.hpp"
 
 #include <iostream>
@@ -15,8 +14,7 @@ namespace po = boost::program_options;
 
 void help()
 {
-    cout << "reads input_images and input_image_names.yml, generates\n"
-         "GMM of the combined images for class_number\n"
+    cout << "reads model and image, generates Segmentation for class_number\n"
          << endl;
 }
 
@@ -32,7 +30,7 @@ void getBinMask( const Mat& comMask, Mat& binMask )
 class GCApplication
 {
 public:
-    void setImageAndWinName( const Mat& _image, MSStructureTensorImage &_MSST_image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel , Mat& _MSST_bgdModel, Mat& _MSST_fgdModel );
+    void setImageAndWinName( const Mat& _image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel );
     void showImage() const;
     int nextIter(int max_iterations);
     int getIterCount() const {
@@ -42,29 +40,23 @@ public:
 private:
     const string* winName;
     const Mat* image;
-    MSStructureTensorImage MSST_image;
     Mat input_mask;
     Mat bgdModel, fgdModel;
-    Mat MSST_bgdModel, MSST_fgdModel;
 
     bool isInitialized;
 
     int iterCount;
 };
 
-void GCApplication::setImageAndWinName( const Mat& _image, MSStructureTensorImage &_MSST_image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel, Mat& _MSST_bgdModel, Mat& _MSST_fgdModel )
+void GCApplication::setImageAndWinName( const Mat& _image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel )
 {
     if( _image.empty() || _winName.empty() )
         return;
     image = &_image;
-    MSST_image = _MSST_image;
-
     winName = &_winName;
 
     bgdModel = _bgdModel;
     fgdModel = _fgdModel;
-    MSST_bgdModel = _MSST_bgdModel;
-    MSST_fgdModel = _MSST_fgdModel;
 }
 
 void GCApplication::showImage() const
@@ -91,7 +83,7 @@ int GCApplication::nextIter(int max_iterations = 2)
     isInitialized = true;
     Rect rect;
 
-    cg_cmsst_grabCut( *image, MSST_image, mask, rect, bgdModel, fgdModel, MSST_bgdModel, MSST_fgdModel, max_iterations );
+    cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
 
     iterCount += max_iterations;
 
@@ -145,7 +137,7 @@ po::variables_map parseCommandline(int argc, char** argv)
     po::options_description generic("Generic options");
     generic.add_options()
         ("help,h", "produce help message")
-        ("max-iterations,m", po::value<int>()->default_value(10), "maximum number of iterations")
+        ("max-iterations,m", po::value<int>()->default_value(100), "maximum number of iterations")
         ("interactive,i", "interactive segmentation")
         //("gaussians,g", po::value<int>()->default_value(5), "number of gaussians used for the gmms")
     ;
@@ -204,37 +196,27 @@ int main( int argc, char** argv )
 
     vector<Vec3f> bgdSamples, fgdSamples;
 
-    Mat fgdModel, bgdModel;
-    Mat input_fgdModel, input_bgdModel;
+    HMM fgdHmm, bgdHmm;
     FileStorage fs(model_filename, FileStorage::READ);
-    fs["fgdModel"] >> fgdModel;
-    fs["bgdModel"] >> bgdModel;
-
-    Mat MSST_fgdModel, MSST_bgdModel;
-    Mat MSST_input_fgdModel, MSST_input_bgdModel;
-    fs["MSST_fgdModel"] >> MSST_fgdModel;
-    fs["MSST_bgdModel"] >> MSST_bgdModel;
-
+    readHMM(fs["fgdHmm"], fgdHmm);
+    readHMM(fs["bgdHmm"], bgdHmm);
     fs.release();
-
-    input_fgdModel = fgdModel.clone();
-    input_bgdModel = bgdModel.clone();
-
-    MSST_input_fgdModel = MSST_fgdModel.clone();
-    MSST_input_bgdModel = MSST_bgdModel.clone();
 
     Mat image, mask;
     readImageAndMask(input_image, image, mask);
-    MSStructureTensorImage MSST_image(image);
 
     const string winName = "image";
     cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
 
-    gcapp.setImageAndWinName( image, MSST_image, winName, bgdModel, fgdModel, MSST_bgdModel, MSST_fgdModel );
+    Mat bgdModel = bgdHmm.getModel();
+    Mat fgdModel = fgdHmm.getModel();
+    Mat fgdModel_cloned = fgdModel.clone();
+
+    gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
     gcapp.showImage();
 
     if(interactive)
-        cvWaitKey(0);
+        cvWaitKey(1000);
 
     int iterCount = gcapp.getIterCount();
     cout << "<" << iterCount << "... ";
@@ -249,8 +231,6 @@ int main( int argc, char** argv )
     fs2 << "mask" << gcapp.mask;
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
-    fs2 << "MSST_fgdModel" << MSST_fgdModel;
-    fs2 << "MSST_bgdModel" << MSST_bgdModel;
 
     int tp, tn, fp, fn, unknown;
     compareMasks(mask, gcapp.mask, class_number, tp, tn, fp, fn, unknown);
@@ -263,7 +243,8 @@ int main( int argc, char** argv )
     cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate;
 
     {
-        GMM i; i.setModel(input_fgdModel);
+        Mat model = fgdHmm.getModel(); 
+        GMM i; i.setModel(model);
         GMM r; r.setModel(fgdModel);
         double kl_div_i_r = i.KLdiv(r);
         double kl_div_r_i = r.KLdiv(i);
@@ -276,7 +257,8 @@ int main( int argc, char** argv )
 
 
     {
-        GMM i; i.setModel(input_bgdModel);
+        Mat model = bgdHmm.getModel(); 
+        GMM i; i.setModel(model);
         GMM r; r.setModel(bgdModel);
         double kl_div_i_r = i.KLdiv(r);
         double kl_div_r_i = r.KLdiv(i);

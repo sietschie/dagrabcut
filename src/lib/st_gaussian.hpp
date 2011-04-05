@@ -28,6 +28,7 @@ public:
     void compute_from_samples(std::vector<std::vector<StructureTensor> > samples);
 };
 
+void readGaussian(const cv::FileNode& fn, MSST_Gaussian& gauss);
 
 #endif //ST_GAUSSIAN_HPP
 

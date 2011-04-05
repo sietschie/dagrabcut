@@ -36,11 +36,49 @@ cv::FileStorage& operator<<(cv::FileStorage& fs, const ST_Gaussian& gauss)
     return fs;
 }
 
+cv::FileStorage& operator<<(cv::FileStorage& fs, const MSST_Gaussian& gauss)
+{
+    vector<StructureTensor>::const_iterator itr;
+
+    fs << "{";
+    int size = gauss.mean.size();
+    fs << "nr_scales" << size;
+    fs << "mean_ms_structuretensor" << "[";
+    for(itr = gauss.mean.begin(); itr != gauss.mean.end(); itr++)
+    {
+        fs << (*itr).getMatrix();
+    }
+    fs << "]";
+
+
+    fs << "cov" << gauss.cov;
+    fs << "}";
+    return fs;
+}
+
+
 void readGaussian(const cv::FileNode& fn, ST_Gaussian& gauss)
 {
     fn["mean"] >> gauss.mean;
     fn["cov"] >> gauss.cov;
 }
+
+void readGaussian(const cv::FileNode& fn, MSST_Gaussian& gauss)
+{
+    int size =(int)fn["nr_scales"];
+
+    FileNodeIterator fni = fn["mean_ms_structuretensor"].begin();
+    for(int i = 0; i<size; i++)
+    {
+        Mat stmat;
+        *fni >> stmat; 
+        StructureTensor st = StructureTensor( stmat ) ;
+        fni++;
+        gauss.mean.push_back(st);
+    }
+    fn["cov"] >> gauss.cov;
+}
+
 
 double ST_Gaussian::KLdiv(const ST_Gaussian &g2) {
     //  1/2 * (trace(cov2_inv cov1) + (mean2 - mean1)^T cov2_inv (mean2 - mean1) - log_e (det_cov1 / det_cov2) - dim

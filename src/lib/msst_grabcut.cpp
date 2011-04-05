@@ -190,7 +190,7 @@ void initMaskWithRect( Mat& mask, int rows, int cols, Rect rect )
 void initGMMs( const MSStructureTensorImage& img, const Mat& mask, MSST_GMM& bgdGMM, MSST_GMM& fgdGMM )
 {
     const int componentsCount = 5;
-    const int kMeansItCount = 10;
+    const int kMeansItCount = 20;
     const int kMeansType = KMEANS_PP_CENTERS;
 
     Mat bgdLabels, fgdLabels;
@@ -211,9 +211,9 @@ void initGMMs( const MSStructureTensorImage& img, const Mat& mask, MSST_GMM& bgd
     CV_Assert( !bgdSamples.empty() && !fgdSamples.empty() );
     vector<vector<StructureTensor> > bgd_centers, fgd_centers;
     MSST_kmeans( bgdSamples, componentsCount, 
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 3, bgdLabels, bgd_centers );
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 1, bgdLabels, bgd_centers );
     MSST_kmeans( fgdSamples, componentsCount, 
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 3, fgdLabels, fgd_centers );
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 1, fgdLabels, fgd_centers );
 
     bgdGMM.setComponentsCount(componentsCount);
     bgdGMM.initLearning();

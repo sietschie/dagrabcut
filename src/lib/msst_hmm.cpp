@@ -1,4 +1,4 @@
-#include "hmm.hpp"
+#include "msst_hmm.hpp"
 #include <limits>
 #include <iostream>
 #include <algorithm>
@@ -7,22 +7,22 @@
 using namespace cv;
 using namespace std;
 
-cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM_Component& component)
+cv::FileStorage& operator<<(cv::FileStorage& fs, const MSST_HMM_Component& component)
 {
     fs << "{";
     fs << "weight" << component.weight;
     fs << "gauss" << component.gauss;
     fs << "div" << component.div;
 
-    std::vector<cv::Vec3b>::const_iterator itr;
+//    std::vector<cv::Vec3b>::const_iterator itr;
     int size = component.samples.size();
     fs << "nr_samples" << size;
-    fs << "samples" << "[";
+/*    fs << "samples" << "[";
     for(itr = component.samples.begin(); itr != component.samples.end(); itr++)
     {
         //fs << *itr;
     }
-    fs << "]";
+    fs << "]";*/
     if( component.left_child != NULL )
         fs << "left_child" << *component.left_child;
     if( component.right_child != NULL )
@@ -37,7 +37,7 @@ cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM_Component& component)
 //    int size = (int) fn.container["nr_components"];
 //}
 
-void readHMM_Component(const cv::FileNode& fn, HMM_Component& hmmc)
+void readHMM_Component(const cv::FileNode& fn, MSST_HMM_Component& hmmc)
 {
     double w = (double)fn["weight"];
     hmmc.weight = w;
@@ -45,19 +45,19 @@ void readHMM_Component(const cv::FileNode& fn, HMM_Component& hmmc)
     double div = (double)fn["div"];
     hmmc.div = div;
 
-    Gaussian gauss;
+    MSST_Gaussian gauss;
     readGaussian(fn["gauss"], gauss);
     hmmc.gauss = gauss;
 
     if( !fn["left_child"].isNone())
     {
-        HMM_Component *hmmc_left = new HMM_Component;
+        MSST_HMM_Component *hmmc_left = new MSST_HMM_Component;
         readHMM_Component(fn["left_child"], *hmmc_left);
         hmmc.left_child = hmmc_left;
     }
     if( !fn["right_child"].isNone())
     {
-        HMM_Component *hmmc_right = new HMM_Component;
+        MSST_HMM_Component *hmmc_right = new MSST_HMM_Component;
         readHMM_Component(fn["right_child"], *hmmc_right);
         hmmc.right_child = hmmc_right;
     }
@@ -65,7 +65,7 @@ void readHMM_Component(const cv::FileNode& fn, HMM_Component& hmmc)
     int size =(int)fn["nr_samples"];
     //std::cout << size << std::endl;
 
-    FileNodeIterator fni = fn["samples"].begin();
+/*    FileNodeIterator fni = fn["samples"].begin();
     for(int i = 0; i<size; i++)
     {
         Vec3b sample;
@@ -78,10 +78,10 @@ void readHMM_Component(const cv::FileNode& fn, HMM_Component& hmmc)
 
         fni++;
         hmmc.samples.push_back(sample);
-    }
+    }*/
 }
 
-void readHMM(const cv::FileNode& fn, HMM& hmm) {
+void readHMM(const cv::FileNode& fn, MSST_HMM& hmm) {
     int size =(int)fn["nr_components"];
     //std::cout << size << std::endl;
 
@@ -89,17 +89,17 @@ void readHMM(const cv::FileNode& fn, HMM& hmm) {
     for(int i = 0; i<size; i++)
     {
         hmm.setComponentsCount(hmm.getComponentsCount() + 1);
-        HMM_Component &hmmc = hmm.components.back();
+        MSST_HMM_Component &hmmc = hmm.components.back();
         readHMM_Component((*fni), hmmc);
         fni++;
     }
 }
 
-cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM& hmm)
+cv::FileStorage& operator<<(cv::FileStorage& fs, const MSST_HMM& hmm)
 {
-    vector<HMM_Component>::const_iterator itr;
+    vector<MSST_HMM_Component>::const_iterator itr;
 
-    std::vector<HMM_Component> components;
+    std::vector<MSST_HMM_Component> components;
 
 //    fs << "[";
 
@@ -117,13 +117,13 @@ cv::FileStorage& operator<<(cv::FileStorage& fs, const HMM& hmm)
 }
 
 
-void HMM::cluster_once()
+void MSST_HMM::cluster_once()
 {
-    vector<HMM_Component>::iterator itr1;
-    vector<HMM_Component>::iterator itr2;
+    vector<MSST_HMM_Component>::iterator itr1;
+    vector<MSST_HMM_Component>::iterator itr2;
 
-    vector<HMM_Component>::iterator min_itr1;
-    vector<HMM_Component>::iterator min_itr2;
+    vector<MSST_HMM_Component>::iterator min_itr1;
+    vector<MSST_HMM_Component>::iterator min_itr2;
 
     double minimum = 1e+100;
 
@@ -138,19 +138,19 @@ void HMM::cluster_once()
             }
         }
 
-    HMM_Component hmmc1 = *min_itr1;
-    HMM_Component hmmc2 = *min_itr2;
+    MSST_HMM_Component hmmc1 = *min_itr1;
+    MSST_HMM_Component hmmc2 = *min_itr2;
 
-    HMM_Component hmmc_new;
-    hmmc_new.left_child = new HMM_Component(hmmc1);
-    hmmc_new.right_child = new HMM_Component(hmmc2);
+    MSST_HMM_Component hmmc_new;
+    hmmc_new.left_child = new MSST_HMM_Component(hmmc1);
+    hmmc_new.right_child = new MSST_HMM_Component(hmmc2);
 
     hmmc_new.weight = hmmc1.weight + hmmc2.weight;
     hmmc_new.div = minimum;
 
 
-    vector<cv::Vec3b> samples1 = hmmc1.get_all_samples();
-    vector<cv::Vec3b> samples2 = hmmc2.get_all_samples();
+    vector<vector<StructureTensor> > samples1 = hmmc1.get_all_samples();
+    vector<vector<StructureTensor> > samples2 = hmmc2.get_all_samples();
 
     samples1.insert(samples1.end(), samples2.begin(), samples2.end());
 
@@ -163,19 +163,14 @@ void HMM::cluster_once()
 
 }
 
-void HMM::addModel(const HMM &model)
+void MSST_HMM::addModel(const MSST_HMM &model)
 {
     components.insert(components.end(), model.components.begin(), model.components.end());
 }
 
-void HMM::setModel(const Mat &model)
+void MSST_HMM::setModel(const Mat &model, const Mat &mask, const MSStructureTensorImage &img, int dim)
 {
-    MM<HMM_Component>::setModel(model);
-}
-
-void HMM::setModel(const Mat &model, const Mat &mask, const Mat &img, int dim)
-{
-    MM<HMM_Component>::setModel(model);
+    MSST_MM<MSST_HMM_Component>::setModel(model);
 
     Point p;
     for( p.y = 0; p.y < mask.rows; p.y++ )
@@ -184,20 +179,33 @@ void HMM::setModel(const Mat &model, const Mat &mask, const Mat &img, int dim)
         {
             if( mask.at<uchar>(p) == 1 )
             {
-                int c = whichComponent( img.at<Vec3b>(p) );
-                components[c].samples.push_back(img.at<Vec3b>(p));
+                int c = whichComponent( img.getTensor(p.x, p.y) );
+                components[c].samples.push_back( img.getTensor(p.x, p.y) );
             }
         }
     }
 }
 
-void HMM::addModel( const Mat &model, const Mat &compIdxs, const Mat &mask, const Mat &img, int dim) {
-    int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
+void MSST_HMM::addModel( const Mat &model, const Mat &compIdxs, const Mat &mask, const MSStructureTensorImage &img, int dim) {
+//    int modelsize = dim /* mean */ + dim * dim /* covariance */ + 1; /* weight */
+    int nr_scales = (model.rows - 2) / 3;
 
     for(int i = 0; i< model.cols; i++)
     {
-        HMM_Component hmmc(model.col(i));
-        components.push_back(hmmc);
+        int c = 0;
+        MSST_Gaussian gauss;
+        
+        for(int s=0; s<nr_scales; s++)
+        {
+            StructureTensor st(model.at<double>(c,i), model.at<double>(c+1,i), model.at<double>(c+2,i));
+            c += 3;
+            gauss.mean.push_back(st);
+        }
+        gauss.cov = model.at<double>(c++,i);
+
+        MSST_HMM_Component MMc;
+        MMc.gauss = gauss;
+        MMc.weight = model.at<double>(c++,i);
 
         Point p;
         for( p.y = 0; p.y < mask.rows; p.y++ )
@@ -206,17 +214,17 @@ void HMM::addModel( const Mat &model, const Mat &compIdxs, const Mat &mask, cons
             {
                 if( mask.at<uchar>(p) == 1 && compIdxs.at<int>(p) == i)
                 {
-                    hmmc.samples.push_back(img.at<Vec3b>(p));
+                    MMc.samples.push_back(img.getTensor(p.x, p.y));
                 }
             }
         }
-        components.push_back(hmmc);
+        components.push_back(MMc);
 
     }
 }
 
 
-void HMM::normalize_weights() {
+void MSST_HMM::normalize_weights() {
     double sum = 0.0;
     for(int i=0; i<components.size(); i++)
     {
@@ -229,20 +237,20 @@ void HMM::normalize_weights() {
     }
 }
 
-HMM::~HMM() {
+MSST_HMM::~MSST_HMM() {
 }
 
-vector<cv::Vec3b> HMM_Component::get_all_samples() {
-    vector<cv::Vec3b> result(500); //TODO: ist das noetig?
+vector<vector<StructureTensor> > MSST_HMM_Component::get_all_samples() {
+    vector<vector<StructureTensor> > result(500); //TODO: ist das noetig?
 
     if( right_child != NULL )
     {
-        vector<cv::Vec3b> rsamples = right_child->get_all_samples();
+        vector<vector<StructureTensor> > rsamples = right_child->get_all_samples();
         result.insert(result.end(), rsamples.begin(), rsamples.end());
     }
     if( left_child != NULL )
     {
-        vector<cv::Vec3b> lsamples = left_child->get_all_samples();
+        vector<vector<StructureTensor> > lsamples = left_child->get_all_samples();
         result.insert(result.end(), lsamples.begin(), lsamples.end());
     }
 
@@ -250,38 +258,38 @@ vector<cv::Vec3b> HMM_Component::get_all_samples() {
     return result;
 }
 
-HMM_Component::HMM_Component( Mat Component ) : GMM_Component(Component) {
+/*MSST_HMM_Component::MSST_HMM_Component( Mat Component ) : MSST_GMM_Component(Component) {
     left_child = NULL;
     right_child = NULL;
     div = 0;
-}
+}*/
 
-HMM_Component::HMM_Component(const HMM_Component& rhs) : GMM_Component(rhs) {
+MSST_HMM_Component::MSST_HMM_Component(const MSST_HMM_Component& rhs) : MSST_GMM_Component(rhs) {
     left_child = NULL;
     right_child = NULL;
     if(rhs.left_child)
     {
-        left_child = new HMM_Component(*rhs.left_child);
+        left_child = new MSST_HMM_Component(*rhs.left_child);
     }
     if(rhs.right_child)
     {
-        right_child = new HMM_Component(*rhs.right_child);
+        right_child = new MSST_HMM_Component(*rhs.right_child);
     }
     samples = rhs.samples;
     div = rhs.div;
 }
 
-HMM_Component& HMM_Component::operator=(const HMM_Component& rhs) {
+MSST_HMM_Component& MSST_HMM_Component::operator=(const MSST_HMM_Component& rhs) {
     
     if(this != &rhs)
     {
-        HMM_Component* tmp_left = NULL;
-        HMM_Component* tmp_right = NULL;
+        MSST_HMM_Component* tmp_left = NULL;
+        MSST_HMM_Component* tmp_right = NULL;
         if(rhs.left_child)
-            tmp_left = new HMM_Component(*rhs.left_child);
+            tmp_left = new MSST_HMM_Component(*rhs.left_child);
 
         if(rhs.right_child)
-            tmp_right = new HMM_Component(*rhs.right_child);
+            tmp_right = new MSST_HMM_Component(*rhs.right_child);
 
         delete left_child;
         delete right_child;
@@ -297,13 +305,13 @@ HMM_Component& HMM_Component::operator=(const HMM_Component& rhs) {
     return *this;
 }
 
-HMM_Component::HMM_Component() {
+MSST_HMM_Component::MSST_HMM_Component() {
     left_child = NULL;
     right_child = NULL;
     div = 0;
 }
 
-HMM_Component::~HMM_Component() {
+MSST_HMM_Component::~MSST_HMM_Component() {
     delete right_child;
     delete left_child;
 }

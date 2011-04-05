@@ -4,8 +4,9 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
+#include "../lib/msst_hmm.hpp"
 #include "../lib/hmm.hpp"
-#include "../lib/grabcut.hpp"
+#include "../lib/structuretensor.hpp"
 #include "../lib/shared.hpp"
 
 using namespace std;
@@ -57,6 +58,34 @@ void learnGMMfromSamples(vector<Vec3f> samples, Mat& model, int nr_gaussians = 5
     cout << "start learning GMM..." << endl;
 
     GMM gmm;
+    gmm.setComponentsCount(nr_gaussians);
+
+    gmm.initLearning();
+    for( int i = 0; i < (int)samples.size(); i++ )
+        gmm.addSample( labels.at<int>(i,0), samples[i] );
+    gmm.endLearning();
+    model = gmm.getModel();
+
+    assert(model.cols == nr_gaussians);
+}
+
+void MSST_learnGMMfromSamples(const vector<vector<StructureTensor> > &samples, Mat& model, int nr_gaussians = 5)
+{
+    const int kMeansItCount = 5;
+    const int kMeansType = KMEANS_PP_CENTERS;
+    const int componentsCount = nr_gaussians;
+
+    Mat labels;
+    assert(samples.size() != 0);
+
+    vector<vector<StructureTensor> > tmp_centers;
+
+    MSST_kmeans( samples, componentsCount,
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 1, labels, tmp_centers);
+
+    cout << "start learning GMM..." << endl;
+
+    MSST_GMM gmm;
     gmm.setComponentsCount(nr_gaussians);
 
     gmm.initLearning();
@@ -127,15 +156,21 @@ int main( int argc, char** argv )
     int nr_gaussians = vm["gaussians"].as<int>();
 
     HMM fgdHmm, bgdHmm;
+    MSST_HMM MSST_fgdHmm, MSST_bgdHmm;
     vector<HMM> fgdHmms, bgdHmms;
+    vector<MSST_HMM> MSST_fgdHmms, MSST_bgdHmms;
 
     for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
     {
         vector<Vec3f> bgdSamples, fgdSamples;
+        vector<vector<StructureTensor> > MSST_bgdSamples, MSST_fgdSamples;
         HMM cur_fgdHmm, cur_bgdHmm;
+        MSST_HMM MSST_cur_fgdHmm, MSST_cur_bgdHmm;
 
         Mat image, mask;
         readImageAndMask(*filename, image, mask);
+
+        MSStructureTensorImage stimage(image);
 
         Point p;
         for( p.y = 0; p.y < image.rows; p.y++ )
@@ -143,15 +178,25 @@ int main( int argc, char** argv )
             for( p.x = 0; p.x < image.cols; p.x++ )
             {
                 if( mask.at<uchar>(p) != class_number)
+                {
+                    MSST_bgdSamples.push_back( stimage.getTensor(p.x,p.y) );
                     bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+                }
                 else // GC_FGD | GC_PR_FGD
+                {
+                    MSST_fgdSamples.push_back( stimage.getTensor(p.x,p.y) );
                     fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+                }
             }
         }
 
         Mat bgdModel, fgdModel;
-        learnGMMfromSamples(bgdSamples, bgdModel);
-        learnGMMfromSamples(fgdSamples, fgdModel);
+        learnGMMfromSamples(bgdSamples, bgdModel, nr_gaussians);
+        learnGMMfromSamples(fgdSamples, fgdModel, nr_gaussians);
+
+        Mat MSST_bgdModel, MSST_fgdModel;
+        MSST_learnGMMfromSamples(MSST_bgdSamples, MSST_bgdModel, nr_gaussians);
+        MSST_learnGMMfromSamples(MSST_fgdSamples, MSST_fgdModel, nr_gaussians);
 
         Mat binary_mask = mask.clone();
         for( p.y = 0; p.y < image.rows; p.y++ )
@@ -166,6 +211,9 @@ int main( int argc, char** argv )
         //Mat binary_mask = mask & class_number;
         cur_fgdHmm.setModel(fgdModel, binary_mask, image);
         cur_bgdHmm.setModel(bgdModel, 1 - binary_mask, image);
+
+        MSST_cur_fgdHmm.setModel(MSST_fgdModel, binary_mask, stimage);
+        MSST_cur_bgdHmm.setModel(MSST_bgdModel, 1 - binary_mask, stimage);
 
         //TODO: precompute the model, maybe cache it?
 
@@ -183,6 +231,9 @@ int main( int argc, char** argv )
 
         fgdHmms.push_back(cur_fgdHmm);
         bgdHmms.push_back(cur_bgdHmm);
+
+        MSST_fgdHmms.push_back(MSST_cur_fgdHmm);
+        MSST_bgdHmms.push_back(MSST_cur_bgdHmm);
     }
 
     vector<double> fgdDivs;
@@ -217,17 +268,25 @@ int main( int argc, char** argv )
         fgdHmm.addModel(fgdHmms[i]);
     for(int i=0; i<bgdHmms.size(); i++)
         bgdHmm.addModel(bgdHmms[i]);
+    for(int i=0; i<MSST_fgdHmms.size(); i++)
+        MSST_fgdHmm.addModel(MSST_fgdHmms[i]);
+    for(int i=0; i<MSST_bgdHmms.size(); i++)
+        MSST_bgdHmm.addModel(MSST_bgdHmms[i]);
 
     cout << "KLdiv: " << fgdHmm.KLdiv(bgdHmm) << endl;
     cout << "KLdiv: " << bgdHmm.KLdiv(fgdHmm) << endl;
 
     fgdHmm.normalize_weights();
     bgdHmm.normalize_weights();
+    MSST_fgdHmm.normalize_weights();
+    MSST_bgdHmm.normalize_weights();
 
     while( fgdHmm.getComponentsCount() > vm["cluster"].as<int>())
     {
         fgdHmm.cluster_once();
         bgdHmm.cluster_once();
+        MSST_fgdHmm.cluster_once();
+        MSST_bgdHmm.cluster_once();
     }
 
     FileStorage fs2(model_filename, FileStorage::WRITE);
@@ -239,6 +298,8 @@ int main( int argc, char** argv )
     fs2 << "]";
     fs2 << "fgdHmm" << fgdHmm;
     fs2 << "bgdHmm" << bgdHmm;
+    fs2 << "MSST_fgdHmm" << MSST_fgdHmm;
+    fs2 << "MSST_bgdHmm" << MSST_bgdHmm;
     fs2.release();
 
     return 0;

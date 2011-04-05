@@ -233,7 +233,7 @@ void initMaskWithRect( Mat& mask, int rows, int cols, Rect rect )
 void initGMMs( const MSStructureTensorImage& img, const Mat& mask, MSST_GMM& bgdGMM, MSST_GMM& fgdGMM )
 {
     const int componentsCount = 5;
-    const int kMeansItCount = 10;
+    const int kMeansItCount = 20;
     const int kMeansType = KMEANS_PP_CENTERS;
 
     Mat bgdLabels, fgdLabels;
@@ -254,9 +254,9 @@ void initGMMs( const MSStructureTensorImage& img, const Mat& mask, MSST_GMM& bgd
     CV_Assert( !bgdSamples.empty() && !fgdSamples.empty() );
     vector<vector<StructureTensor> > bgd_centers, fgd_centers;
     MSST_kmeans( bgdSamples, componentsCount, 
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 3, bgdLabels, bgd_centers );
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 1, bgdLabels, bgd_centers );
     MSST_kmeans( fgdSamples, componentsCount, 
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 3, fgdLabels, fgd_centers );
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 1, fgdLabels, fgd_centers );
 
     bgdGMM.setComponentsCount(componentsCount);
     bgdGMM.initLearning();
@@ -455,7 +455,6 @@ double estimateSegmentation( Graph<double, double, double>& graph, Mat& mask )
     double flow = graph.maxflow();
 
     int prfgd_c = 0;
-    int fgd_c = 0;
 
     Point p;
     for( p.y = 0; p.y < mask.rows; p.y++ )
@@ -474,7 +473,7 @@ double estimateSegmentation( Graph<double, double, double>& graph, Mat& mask )
             }
         }
     }
-    std::cout << "prfgd_c = " << fgd_c << std::endl;
+    std::cout << "prfgd_c = " << prfgd_c << std::endl;
 
     return flow;
 }
@@ -501,6 +500,9 @@ void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, M
     double xi = 1 - exp( -cgmmklsym / sigma_kl_c ); //PARAMETER: sigma_{KL_C}
 
     std::cout << "xi = " << xi << std::endl;
+
+    //TEMP
+    //xi = 1.0;
 
     if( mode == GC_INIT_WITH_RECT || mode == GC_INIT_WITH_MASK )
     {
@@ -568,24 +570,53 @@ int counter=0;
             double bgd = bgdGMM(img.at<Vec3b>(p));
             double fgd = fgdGMM(img.at<Vec3b>(p));
 
-//            std::cout << "1msst: bgd= " << MSST_bgd << "  fgd= " << MSST_fgd << "  col: bgd= " << bgd << "  fgd= " << fgd << "\n";
 //            std::cout << "2msst: bgd= " << MSST_bgd * MSST_bgd * MSST_bgd << "  fgd= " << MSST_fgd * MSST_fgd * MSST_fgd << "  col: bgd= " << bgd << "  fgd= " << fgd <<  "\n";
 //            std::cout << "3msst: bgd= " << pow(MSST_bgd, -1.0+xi) << "  fgd= " << pow( MSST_fgd, -1.0+xi) << "  col: bgd= " << pow(bgd,-xi) << "  fgd= " << pow(fgd,-xi) <<  "\n";
 
-            double com_bgd = (xi * bgd) + (1-xi)* pow(MSST_bgd,3);
+/*            double com_bgd = (xi * bgd) + (1-xi)* pow(MSST_bgd,3);
             double com_fgd = (xi * fgd) + (1-xi)* pow(MSST_fgd, 3);
 
+            assert(bgd != 0.0);
+            assert(MSST_bgd != 0.0);
+
+            double quot_color = fgd / bgd;
+            double quot_st = MSST_fgd / MSST_bgd;
+
+
+        if( (bgd > fgd) != (MSST_bgd > MSST_fgd) ) {
+            std::cout << "1msst: bgd= " << MSST_bgd << "  fgd= " << MSST_fgd << "  col: bgd= " << bgd << "  fgd= " << fgd << "\n";
+            std::cout << "fgd = " << fgd * MSST_fgd << "  bgd = " << bgd * MSST_bgd << std::endl; 
+            std::cout << "log(fgd) = " << log(fgd * MSST_fgd) << "  log(bgd) = " << log(bgd * MSST_bgd) << std::endl; 
+            std::cout << "log(fgd) = " << log(fgd) + log(MSST_fgd) << "  log(bgd) = " << log(bgd) + log(MSST_bgd) << std::endl; 
+            xi = 0.01;
+            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
+            xi = 0.1;
+            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
+            xi = 0.5;
+            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
+            xi = 0.9;
+            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
+            std::cout << "quot_st = " << quot_st << "  quot_color = " << quot_color << std::endl; 
+            std::cout << "log: quot_st = " << log(quot_st) << "  quot_color = " << log( quot_color ) << std::endl; 
+}
 //            std::cout << "com_bgd = " << com_bgd << "  com_fgd = " << com_fgd << "\n";
 
 
+/*            if(qout_color >= 1.0 && quot_st >= 1.0)
+                mask.at<uchar>(p.y, p.x) = GC_PR_FGD;
+            else if(qout_color < 1.0 && quot_st < 1.0)
+                mask.at<uchar>(p.y, p.x) = GC_PR_BGD;
+            else*/
 
 //            if( bgd > fgd)
-            if( (xi * bgd) + (1-xi)* pow(MSST_bgd,3) > (xi * fgd) + (1-xi)* pow(MSST_fgd, 3))
+//            if( (xi * bgd) + (1-xi)* pow(MSST_bgd,3) > (xi * fgd) + (1-xi)* pow(MSST_fgd, 3))
+//            if( bgd * MSST_bgd > fgd * MSST_fgd )
+            if( xi*log(bgd) + (1.0-xi)*log(MSST_bgd) > xi*log(fgd) + (1.0-xi)*log(MSST_fgd) )
                 mask.at<uchar>(p.y, p.x) = GC_PR_BGD;
             else
                 mask.at<uchar>(p.y, p.x) = GC_PR_FGD;
 
-            if( (bgd > fgd) && (com_bgd <= com_fgd))
+            /*if( (bgd > fgd) && (com_bgd <= com_fgd))
             {
                 mask.at<uchar>(p.y, p.x) = 10;
                 std::cout << counter++ << " com_bgd = " << com_bgd << "  com_fgd = " << com_fgd << "  bgd = " << bgd << " fgd = " << fgd << "\n";
@@ -593,7 +624,7 @@ int counter=0;
             {
                 mask.at<uchar>(p.y, p.x) = 10;
                 std::cout << counter++ << " com_bgd = " << com_bgd << "  com_fgd = " << com_fgd << "  bgd = " << bgd << " fgd = " << fgd << "\n";
-            }
+            }*/
         }
     }
 
@@ -609,7 +640,7 @@ int counter=0;
     const double lambda = 9*gamma;
     const double beta = calcBeta( img );
 
-    const double MSST_gamma = 5; //PARAMETER
+    const double MSST_gamma = 15; //PARAMETER
     const double MSST_lambda = 9*gamma;
     const double MSST_beta = MSST_calcBeta( MSST_img );
 

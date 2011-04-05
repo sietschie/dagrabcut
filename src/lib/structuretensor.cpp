@@ -238,7 +238,7 @@ StructureTensor compute_mean(const std::vector<StructureTensor>& list){
 
 //    cout << "mean = " << res.at<double>(0,0) << " " << res.at<double>(1,0) << " " << res.at<double>(0,1) << " " << res.at<double>(1,1) << endl;
 //    return res;
-    Mat sum(2,2,CV_64FC1, Scalar(0.0));
+/*    Mat sum(2,2,CV_64FC1, Scalar(0.0));
 
     for(int i=0; i<list.size(); i++)
     {
@@ -246,23 +246,52 @@ StructureTensor compute_mean(const std::vector<StructureTensor>& list){
         add(sum, list[i].getMatrix(), sum);
     }
 
-    Mat res2 = (sum / list.size());
+    Mat res2 = (sum / list.size());*/
     
-    return res2;
+    return res;
 
 }
 
 vector<StructureTensor> MS_compute_mean(const std::vector<std::vector<StructureTensor> >& list){
+    Mat st_inv;
+    Mat st;
+    Mat B_sqrt;
+    Mat B_inv;
+    Mat B_inv_sqrt;
+    Mat BAB_sqrt;
+    Mat BAB;
+
     vector<StructureTensor> res;
     for(int s=0;s<list[0].size();s++)
     {
-        // construct one vector for each scale
-        vector<StructureTensor> tmp;
-        for(int i=0;i<list.size();i++)
-        {   
-            tmp.push_back(list[i][s]);
+        Mat A(2,2,CV_64FC1,Scalar(0));
+        Mat B(2,2,CV_64FC1,Scalar(0));
+
+        for(int i=0; i<list.size(); i++)
+        {
+            st = list[0][s].getMatrix();
+            A += st;
+            invert(st, st_inv);
+            B += st_inv;
         }
-        res.push_back(compute_mean(tmp));
+        
+        A = A / list.size();
+        B = B / list.size();
+
+        matrix_sqrt(B, B_sqrt);
+
+        invert(B, B_inv);
+
+    //    cout << "B_inv = " << B_inv.at<double>(0,0) << " " << B_inv.at<double>(1,0) << " " << B_inv.at<double>(0,1) << " " << B_inv.at<double>(1,1) << endl;
+
+        matrix_sqrt(B_inv, B_inv_sqrt);
+    //    cout << "B_inv_sqrt = " << B_inv_sqrt.at<double>(0,0) << " " << B_inv_sqrt.at<double>(1,0) << " " << B_inv_sqrt.at<double>(0,1) << " " << B_inv_sqrt.at<double>(1,1) << endl;
+
+        BAB = B_sqrt * A * B_sqrt;
+
+        matrix_sqrt(BAB, BAB_sqrt);
+
+        res.push_back(StructureTensor(B_inv_sqrt * BAB_sqrt * B_inv_sqrt));
     }
     return res;
 }
@@ -274,8 +303,91 @@ static void generateRandomCenter(StructureTensor &center, vector<StructureTensor
 
 static void generateRandomCenter(vector<StructureTensor> &center, vector<vector<StructureTensor> > tensors, RNG& rng)
 {
+    cout << "generate random center... " << endl;
     center = tensors[rng.uniform(0, tensors.size())];
 }
+
+
+static void generateRandomCenter_kmeanspp(vector<vector<StructureTensor> > &centers, int regenerate_index, vector<vector<StructureTensor> > tensors, RNG& rng)
+{
+    assert(centers.size() > 0);
+    assert(centers.size() > regenerate_index);
+
+    if( regenerate_index == 0 )
+        centers[0] = tensors[rng.uniform(0, tensors.size())];
+    else {
+        vector<double> min_dist(tensors.size());
+        for(int t=0; t<tensors.size(); t++)
+        {
+
+            min_dist[t] = 10000000000.0; //TODO: double max einsetzen
+            for(int j=0; j<regenerate_index; j++)
+            {
+
+                double dist = MS_distance2(tensors[t], centers[j]);
+                if( dist < min_dist[t] )
+                    min_dist[t] = dist;
+            }
+        }
+
+        vector<double> partial_sum_squares(tensors.size());
+        partial_sum_squares[0] = min_dist[0] * min_dist[0];
+
+        for(int j=1; j< tensors.size(); j++)
+        {
+            partial_sum_squares[j] = partial_sum_squares[j-1] + min_dist[j] * min_dist[j];
+        }
+
+        double rand = rng.uniform(0.0, *partial_sum_squares.end());
+
+        // find element
+        int index = 0;
+        while( partial_sum_squares[index] < rand )
+            index++;        
+
+        centers[regenerate_index] = tensors[index];
+    }
+}
+
+static void generateRandomCenters_kmeanspp(vector<vector<StructureTensor> > &centers, vector<vector<StructureTensor> > tensors, RNG& rng)
+{
+    assert(centers.size() > 0);
+
+    centers[0] = tensors[rng.uniform(0, tensors.size())];
+
+    for(int i=1; i<centers.size(); i++)
+    {
+        vector<double> min_dist(tensors.size());
+        for(int t=0; t<tensors.size(); t++)
+        {
+            min_dist[t] = 10000000000.0; //TODO: double max einsetzen
+            for(int j=0; j<i; j++)
+            {
+                double dist = MS_distance2(tensors[t], centers[j]);
+                if( dist < min_dist[t] )
+                    min_dist[t] = dist;
+            }
+        }
+
+        vector<double> partial_sum_squares(tensors.size());
+        partial_sum_squares[0] = min_dist[0] * min_dist[0];
+
+        for(int j=1; j< tensors.size(); j++)
+        {
+            partial_sum_squares[j] = partial_sum_squares[j-1] + min_dist[j] * min_dist[j];
+        }
+
+        double rand = rng.uniform(0.0, *partial_sum_squares.end());
+
+        // find element
+        int index = 0;
+        while( partial_sum_squares[index] < rand )
+            index++;        
+
+        centers[i] = tensors[index];
+    }
+}
+
 
 double kmeans(const std::vector<StructureTensor> &tensors, int K, cv::TermCriteria criteria, int attempts, cv::Mat &best_labels, std::vector<StructureTensor> &best_centers)
 {
@@ -492,11 +604,13 @@ double MSST_kmeans(const std::vector<std::vector<StructureTensor> > &tensors, in
         for( iter = 0; iter < criteria.maxCount && max_center_shift > criteria.epsilon; iter++ )
         {
             swap(centers, old_centers);
+//            old_centers = centers;
 
             if( iter == 0 )
             {
-                for( k = 0; k < K; k++ )
-                    generateRandomCenter(centers[k], tensors, rng);
+                generateRandomCenters_kmeanspp(centers, tensors, rng);
+                //for( k = 0; k < K; k++ )
+                //    generateRandomCenter(centers[k], tensors, rng);
             }
             else
             {
@@ -519,7 +633,8 @@ double MSST_kmeans(const std::vector<std::vector<StructureTensor> > &tensors, in
                     if( clustered_tensors[k].size() != 0 )
                         centers[k] = MS_compute_mean(clustered_tensors[k]);
                     else
-                        generateRandomCenter(centers[k], tensors, rng);
+                        //generateRandomCenter(centers[k], tensors, rng);
+                        generateRandomCenter_kmeanspp(centers, k, tensors, rng);
 
                     if( iter > 0 )
                     {
@@ -529,7 +644,7 @@ double MSST_kmeans(const std::vector<std::vector<StructureTensor> > &tensors, in
                         max_center_shift = std::max(max_center_shift, dist);
                     }
                 }
-                //cout << "max_center_shift = " << max_center_shift << endl;
+                cout << "max_center_shift = " << max_center_shift << endl;
             }
 
             // assign labels
