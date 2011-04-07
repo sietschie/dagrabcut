@@ -151,6 +151,18 @@ BOOST_AUTO_TEST_CASE(MyTestCaseHMMComponent_AssignmentOperator)
     BOOST_CHECK_CLOSE( c1.weight, 1.234, 0.0001f);
 }
 
+BOOST_AUTO_TEST_CASE(MyTestCaseHMMComponent_GetAllSamples)
+{
+    HMM_Component c1;
+    cv::Vec3b s;
+    c1.samples.push_back(s);
+
+    vector<cv::Vec3b> res = c1.get_all_samples();
+
+    BOOST_CHECK_EQUAL(c1.samples.size(), 1);
+    BOOST_CHECK_EQUAL(res.size(), 1);
+}
+
 BOOST_AUTO_TEST_CASE(MyTestCase_FileWrite)
 {
     HMM org, res;
