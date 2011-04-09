@@ -21,34 +21,6 @@ void help()
          << endl;
 }
 
-void MSST_learnGMMfromSamples(const vector<vector<StructureTensor> > &samples, Mat& model, int nr_gaussians = 5)
-{
-    const int kMeansItCount = 5;
-    const int kMeansType = KMEANS_PP_CENTERS;
-    const int componentsCount = nr_gaussians;
-
-    Mat labels;
-    assert(samples.size() != 0);
-
-    vector<vector<StructureTensor> > tmp_centers;
-
-    MSST_kmeans( samples, componentsCount,
-            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 1, labels, tmp_centers);
-
-    cout << "start learning GMM..." << endl;
-
-    MSST_GMM gmm;
-    gmm.setComponentsCount(nr_gaussians);
-
-    gmm.initLearning();
-    for( int i = 0; i < (int)samples.size(); i++ )
-        gmm.addSample( labels.at<int>(i,0), samples[i] );
-    gmm.endLearning();
-    model = gmm.getModel();
-
-    assert(model.cols == nr_gaussians);
-}
-
 po::variables_map parseCommandline(int argc, char** argv)
 {
     po::options_description generic("Generic options");
@@ -168,6 +140,17 @@ int main( int argc, char** argv )
     fs2 << "var_fgd_kl_sym" << var_fgd_kl_sym;
     fs2 << "var_fgd_kl_mr" << var_fgd_kl_mr;
     fs2 << "var_fgd_kl_rm" << var_fgd_kl_rm;
+
+    double msst_var_bgd_kl_sym, msst_var_bgd_kl_mr, msst_var_bgd_kl_rm, msst_var_fgd_kl_sym, msst_var_fgd_kl_mr, msst_var_fgd_kl_rm;
+    MSST_compute_variance(input_images, MSST_bgdModel, MSST_fgdModel, nr_gaussians, class_number,
+        msst_var_bgd_kl_sym, msst_var_bgd_kl_mr, msst_var_bgd_kl_rm, msst_var_fgd_kl_sym, msst_var_fgd_kl_mr, msst_var_fgd_kl_rm );
+
+    fs2 << "msst_var_bgd_kl_sym" << msst_var_bgd_kl_sym;
+    fs2 << "msst_var_bgd_kl_mr" << msst_var_bgd_kl_mr;
+    fs2 << "msst_var_bgd_kl_rm" << msst_var_bgd_kl_rm;
+    fs2 << "msst_var_fgd_kl_sym" << msst_var_fgd_kl_sym;
+    fs2 << "msst_var_fgd_kl_mr" << msst_var_fgd_kl_mr;
+    fs2 << "msst_var_fgd_kl_rm" << msst_var_fgd_kl_rm;
 
     return 0;
 }

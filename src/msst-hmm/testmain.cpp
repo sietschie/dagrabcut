@@ -304,6 +304,39 @@ int main( int argc, char** argv )
         cout << " ,bgd KL sym: " << kl_sym;
         cout << " ,prob bgd KL sym: " << compute_probability( kl_sym, var_bgd_kl_sym);
     }
+
+    {
+        Mat model = MSST_fgdHmm.getModel(); 
+        MSST_GMM i; i.setModel(model);
+        MSST_GMM r; r.setModel(MSST_fgdModel);
+        double kl_div_i_r = i.KLdiv(r);
+        double kl_div_r_i = r.KLdiv(i);
+        double kl_sym = i.KLsym(r);
+
+        cout << " ,msst fgd KL input result: " << kl_div_i_r;
+        cout << " ,msst prob fgd KL input result: " << compute_probability( kl_div_i_r, var_fgd_kl_mr);
+        cout << " ,msst fgd KL result input: " << kl_div_r_i;
+        cout << " ,msst prob fgd KL result input: " << compute_probability( kl_div_r_i, var_fgd_kl_rm);
+        cout << " ,msst fgd KL sym: " << kl_sym;
+        cout << " ,msst prob fgd KL sym: " << compute_probability( kl_sym, var_fgd_kl_sym);
+    }
+
+
+    {
+        Mat model = MSST_bgdHmm.getModel(); 
+        MSST_GMM i; i.setModel(model);
+        MSST_GMM r; r.setModel(MSST_bgdModel);
+        double kl_div_i_r = i.KLdiv(r);
+        double kl_div_r_i = r.KLdiv(i);
+        double kl_sym = i.KLsym(r);
+
+        cout << " ,msst bgd KL input result: " << kl_div_i_r;
+        cout << " ,msst prob bgd KL input result: " << compute_probability( kl_div_i_r, var_bgd_kl_mr);
+        cout << " ,msst bgd KL result input: " << kl_div_r_i;
+        cout << " ,msst prob bgd KL result input: " << compute_probability( kl_div_r_i, var_bgd_kl_rm);
+        cout << " ,msst bgd KL sym: " << kl_sym;
+        cout << " ,msst prob bgd KL sym: " << compute_probability( kl_sym, var_bgd_kl_sym);
+    }
     cout << endl;
     if(interactive)
         cvWaitKey(0);
