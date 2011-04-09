@@ -94,6 +94,78 @@ po::variables_map parseCommandline(int argc, char** argv)
     return vm;
 }
 
+double compute_variance_from_vector(vector<double> diffs)
+{
+    double square_sum = 0.0;
+    for(vector<double>::iterator itr = diffs.begin(); itr != diffs.end(); itr++)
+    {
+        square_sum += *itr * *itr;
+    }
+    
+    double variance = square_sum / diffs.size();
+    return variance;
+}
+
+double compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean_fgdModel, int nr_gaussians, int class_number,
+        double &var_bgd_kl_sym, double &var_bgd_kl_mr, double &var_bgd_kl_rm, double &var_fgd_kl_sym, double &var_fgd_kl_mr, double &var_fgd_kl_rm )
+{
+    GMM mean_bgdGMM, mean_fgdGMM;
+    mean_bgdGMM.setModel(mean_bgdModel);
+    mean_fgdGMM.setModel(mean_fgdModel);
+
+    vector<double> diff_bgd_kl_sym;
+    vector<double> diff_bgd_kl_mr;
+    vector<double> diff_bgd_kl_rm;
+    vector<double> diff_fgd_kl_sym;
+    vector<double> diff_fgd_kl_mr;
+    vector<double> diff_fgd_kl_rm;
+
+    for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
+    {
+        vector<Vec3f> bgdSamples, fgdSamples;
+
+        Mat image, mask;
+        readImageAndMask(*filename, image, mask);
+
+        Point p;
+        for( p.y = 0; p.y < image.rows; p.y++ )
+        {
+            for( p.x = 0; p.x < image.cols; p.x++ )
+            {
+                if( mask.at<uchar>(p) != class_number)
+                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+                else // GC_FGD | GC_PR_FGD
+                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+            }
+        }
+
+        Mat bgdModel, fgdModel;
+        learnGMMfromSamples(bgdSamples, bgdModel, nr_gaussians);
+        learnGMMfromSamples(fgdSamples, fgdModel, nr_gaussians);
+
+        GMM bgdGMM, fgdGMM;
+        bgdGMM.setModel(bgdModel);
+        fgdGMM.setModel(fgdModel);
+
+        diff_bgd_kl_sym.push_back( mean_bgdGMM.KLsym(bgdGMM) );        
+        diff_bgd_kl_mr.push_back( mean_bgdGMM.KLdiv(bgdGMM) );        
+        diff_bgd_kl_rm.push_back( bgdGMM.KLdiv(mean_bgdGMM) );        
+
+        diff_fgd_kl_sym.push_back( mean_fgdGMM.KLsym(fgdGMM) );        
+        diff_fgd_kl_mr.push_back( mean_fgdGMM.KLdiv(fgdGMM) );        
+        diff_fgd_kl_rm.push_back( fgdGMM.KLdiv(mean_fgdGMM) );        
+
+    }
+
+    var_fgd_kl_sym = compute_variance_from_vector( diff_bgd_kl_sym );
+    var_fgd_kl_mr = compute_variance_from_vector( diff_bgd_kl_mr );
+    var_fgd_kl_rm = compute_variance_from_vector( diff_bgd_kl_rm );
+    var_bgd_kl_sym = compute_variance_from_vector( diff_fgd_kl_sym );
+    var_bgd_kl_mr = compute_variance_from_vector( diff_fgd_kl_mr );
+    var_bgd_kl_rm = compute_variance_from_vector( diff_fgd_kl_rm );
+    
+}
+
 int main( int argc, char** argv )
 {
     po::variables_map vm = parseCommandline(argc, argv);
@@ -137,6 +209,17 @@ int main( int argc, char** argv )
     fs2 << "]";
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
+
+    double var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm;
+    compute_variance(input_images, bgdModel, fgdModel, nr_gaussians, class_number,
+        var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm );
+
+    fs2 << "var_bgd_kl_sym" << var_bgd_kl_sym;
+    fs2 << "var_bgd_kl_mr" << var_bgd_kl_mr;
+    fs2 << "var_bgd_kl_rm" << var_bgd_kl_rm;
+    fs2 << "var_fgd_kl_sym" << var_fgd_kl_sym;
+    fs2 << "var_fgd_kl_mr" << var_fgd_kl_mr;
+    fs2 << "var_fgd_kl_rm" << var_fgd_kl_rm;
 
     return 0;
 }

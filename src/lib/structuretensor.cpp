@@ -338,7 +338,7 @@ static void generateRandomCenter_kmeanspp(vector<vector<StructureTensor> > &cent
             partial_sum_squares[j] = partial_sum_squares[j-1] + min_dist[j] * min_dist[j];
         }
 
-        double rand = rng.uniform(0.0, *partial_sum_squares.end());
+        double rand = rng.uniform(0.0, partial_sum_squares.back());
 
         // find element
         int index = 0;
@@ -377,7 +377,7 @@ static void generateRandomCenters_kmeanspp(vector<vector<StructureTensor> > &cen
             partial_sum_squares[j] = partial_sum_squares[j-1] + min_dist[j] * min_dist[j];
         }
 
-        double rand = rng.uniform(0.0, *partial_sum_squares.end());
+        double rand = rng.uniform(0.0, partial_sum_squares.back());
 
         // find element
         int index = 0;

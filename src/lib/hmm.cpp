@@ -233,7 +233,7 @@ HMM::~HMM() {
 }
 
 vector<cv::Vec3b> HMM_Component::get_all_samples() {
-    vector<cv::Vec3b> result(500); //TODO: ist das noetig?
+    vector<cv::Vec3b> result; 
 
     if( right_child != NULL )
     {

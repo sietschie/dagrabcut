@@ -241,7 +241,7 @@ MSST_HMM::~MSST_HMM() {
 }
 
 vector<vector<StructureTensor> > MSST_HMM_Component::get_all_samples() {
-    vector<vector<StructureTensor> > result(500); //TODO: ist das noetig?
+    vector<vector<StructureTensor> > result;
 
     if( right_child != NULL )
     {
