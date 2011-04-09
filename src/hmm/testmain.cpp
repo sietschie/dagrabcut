@@ -200,6 +200,15 @@ int main( int argc, char** argv )
     FileStorage fs(model_filename, FileStorage::READ);
     readHMM(fs["fgdHmm"], fgdHmm);
     readHMM(fs["bgdHmm"], bgdHmm);
+
+    double var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm;
+    fs["var_bgd_kl_sym"] >> var_bgd_kl_sym;
+    fs["var_bgd_kl_mr"] >> var_bgd_kl_mr;
+    fs["var_bgd_kl_rm"] >> var_bgd_kl_rm;
+    fs["var_fgd_kl_sym"] >> var_fgd_kl_sym;
+    fs["var_fgd_kl_mr"] >> var_fgd_kl_mr;
+    fs["var_fgd_kl_rm"] >> var_fgd_kl_rm;
+
     fs.release();
 
     Mat image, mask;
@@ -251,8 +260,11 @@ int main( int argc, char** argv )
         double kl_sym = i.KLsym(r);
 
         cout << " ,fgd KL input result: " << kl_div_i_r;
+        cout << " ,prob fgd KL input result: " << compute_probability( kl_div_i_r, var_fgd_kl_mr);
         cout << " ,fgd KL result input: " << kl_div_r_i;
+        cout << " ,prob fgd KL result input: " << compute_probability( kl_div_r_i, var_fgd_kl_rm);
         cout << " ,fgd KL sym: " << kl_sym;
+        cout << " ,prob fgd KL sym: " << compute_probability( kl_sym, var_fgd_kl_sym);
     }
 
 
@@ -265,8 +277,11 @@ int main( int argc, char** argv )
         double kl_sym = i.KLsym(r);
 
         cout << " ,bgd KL input result: " << kl_div_i_r;
+        cout << " ,prob bgd KL input result: " << compute_probability( kl_div_i_r, var_bgd_kl_mr);
         cout << " ,bgd KL result input: " << kl_div_r_i;
+        cout << " ,prob bgd KL result input: " << compute_probability( kl_div_r_i, var_bgd_kl_rm);
         cout << " ,bgd KL sym: " << kl_sym;
+        cout << " ,prob bgd KL sym: " << compute_probability( kl_sym, var_bgd_kl_sym);
     }
     cout << endl;
     if(interactive)

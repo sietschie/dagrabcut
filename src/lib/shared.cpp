@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "opencv2/highgui/highgui.hpp"
+#include "gmm.hpp"
 
 using namespace std;
 using namespace cv;
@@ -27,5 +28,112 @@ void readImageAndMask(string filename, Mat& image, Mat& mask)
 
     FileStorage fs(mask_filename, FileStorage::READ);
     fs["mask"] >> mask;
+}
+
+double compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean_fgdModel, int nr_gaussians, int class_number,
+        double &var_bgd_kl_sym, double &var_bgd_kl_mr, double &var_bgd_kl_rm, double &var_fgd_kl_sym, double &var_fgd_kl_mr, double &var_fgd_kl_rm )
+{
+    GMM mean_bgdGMM, mean_fgdGMM;
+    mean_bgdGMM.setModel(mean_bgdModel);
+    mean_fgdGMM.setModel(mean_fgdModel);
+
+    vector<double> diff_bgd_kl_sym;
+    vector<double> diff_bgd_kl_mr;
+    vector<double> diff_bgd_kl_rm;
+    vector<double> diff_fgd_kl_sym;
+    vector<double> diff_fgd_kl_mr;
+    vector<double> diff_fgd_kl_rm;
+
+    for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
+    {
+        vector<Vec3f> bgdSamples, fgdSamples;
+
+        Mat image, mask;
+        readImageAndMask(*filename, image, mask);
+
+        Point p;
+        for( p.y = 0; p.y < image.rows; p.y++ )
+        {
+            for( p.x = 0; p.x < image.cols; p.x++ )
+            {
+                if( mask.at<uchar>(p) != class_number)
+                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+                else // GC_FGD | GC_PR_FGD
+                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+            }
+        }
+
+        Mat bgdModel, fgdModel;
+        learnGMMfromSamples(bgdSamples, bgdModel, nr_gaussians);
+        learnGMMfromSamples(fgdSamples, fgdModel, nr_gaussians);
+
+        GMM bgdGMM, fgdGMM;
+        bgdGMM.setModel(bgdModel);
+        fgdGMM.setModel(fgdModel);
+
+        diff_bgd_kl_sym.push_back( mean_bgdGMM.KLsym(bgdGMM) );        
+        diff_bgd_kl_mr.push_back( mean_bgdGMM.KLdiv(bgdGMM) );        
+        diff_bgd_kl_rm.push_back( bgdGMM.KLdiv(mean_bgdGMM) );        
+
+        diff_fgd_kl_sym.push_back( mean_fgdGMM.KLsym(fgdGMM) );        
+        diff_fgd_kl_mr.push_back( mean_fgdGMM.KLdiv(fgdGMM) );        
+        diff_fgd_kl_rm.push_back( fgdGMM.KLdiv(mean_fgdGMM) );        
+
+    }
+
+    var_fgd_kl_sym = compute_variance_from_vector( diff_bgd_kl_sym );
+    var_fgd_kl_mr = compute_variance_from_vector( diff_bgd_kl_mr );
+    var_fgd_kl_rm = compute_variance_from_vector( diff_bgd_kl_rm );
+    var_bgd_kl_sym = compute_variance_from_vector( diff_fgd_kl_sym );
+    var_bgd_kl_mr = compute_variance_from_vector( diff_fgd_kl_mr );
+    var_bgd_kl_rm = compute_variance_from_vector( diff_fgd_kl_rm );
+    
+}
+
+void learnGMMfromSamples(vector<Vec3f> samples, Mat& model, int nr_gaussians)
+{
+    const int kMeansItCount = 10;
+    const int kMeansType = KMEANS_PP_CENTERS;
+    const int componentsCount = nr_gaussians;
+
+    Mat labels;
+    CV_Assert( !samples.empty() );
+    Mat _samples( (int)samples.size(), 3, CV_32FC1, &samples[0][0] );
+
+    kmeans( _samples, componentsCount, labels,
+            TermCriteria( CV_TERMCRIT_ITER, kMeansItCount, 0.0), 0, kMeansType, 0 );
+
+    cout << "start learning GMM..." << endl;
+
+    GMM gmm;
+    gmm.setComponentsCount(nr_gaussians);
+
+    gmm.initLearning();
+    for( int i = 0; i < (int)samples.size(); i++ )
+        gmm.addSample( labels.at<int>(i,0), samples[i] );
+    gmm.endLearning();
+    model = gmm.getModel();
+
+    assert(model.cols == nr_gaussians);
+}
+
+double compute_variance_from_vector(vector<double> diffs)
+{
+    double square_sum = 0.0;
+    for(vector<double>::iterator itr = diffs.begin(); itr != diffs.end(); itr++)
+    {
+        square_sum += *itr * *itr;
+    }
+    
+    double variance = square_sum / diffs.size();
+    return variance;
+}
+
+double compute_probability(double dist, double variance)
+{
+    double exponent = (dist * dist) / (-2 * variance);
+    double res = exp( exponent ) / sqrt( 2.0 * M_PI * variance );
+
+    return res;
 }
 

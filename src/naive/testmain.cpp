@@ -182,14 +182,6 @@ po::variables_map parseCommandline(int argc, char** argv)
     return vm;
 }
 
-double compute_probability(double dist, double variance)
-{
-    double exponent = (dist * dist) / (-2 * variance);
-    double res = exp( exponent ) / sqrt( 2.0 * M_PI * variance );
-
-    return res;
-}
-
 int main( int argc, char** argv )
 {
     po::variables_map vm = parseCommandline(argc, argv);
