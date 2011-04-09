@@ -39,6 +39,9 @@ public:
     int getIterCount() const {
         return iterCount;
     }
+    double getXi() const {
+        return xi;
+    }
     Mat mask;
 private:
     const string* winName;
@@ -51,6 +54,8 @@ private:
     bool isInitialized;
 
     int iterCount;
+
+    double xi;
 };
 
 void GCApplication::setImageAndWinName( const Mat& _image, MSStructureTensorImage &_MSST_image, const string& _winName, Mat& _bgdModel, Mat& _fgdModel, Mat& _MSST_bgdModel, Mat& _MSST_fgdModel )
@@ -92,7 +97,7 @@ int GCApplication::nextIter(int max_iterations = 2)
     isInitialized = true;
     Rect rect;
 
-    cg_cmsst_grabCut( *image, MSST_image, mask, rect, bgdModel, fgdModel, MSST_bgdModel, MSST_fgdModel, max_iterations );
+    cg_cmsst_grabCut( *image, MSST_image, mask, rect, bgdModel, fgdModel, MSST_bgdModel, MSST_fgdModel, max_iterations, xi );
 
     iterCount += max_iterations;
 
@@ -337,6 +342,9 @@ int main( int argc, char** argv )
         cout << " ,msst bgd KL sym: " << kl_sym;
         cout << " ,msst prob bgd KL sym: " << compute_probability( kl_sym, var_bgd_kl_sym);
     }
+
+    cout << " ,xi: " << gcapp.getXi();
+
     cout << endl;
     if(interactive)
         cvWaitKey(0);

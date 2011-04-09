@@ -480,7 +480,7 @@ double estimateSegmentation( Graph<double, double, double>& graph, Mat& mask )
 
 void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, Mat& mask, Rect rect,
                  Mat& bgdModel, Mat& fgdModel, Mat& MSST_bgdModel, Mat& MSST_fgdModel,
-                 int iterCount, int mode )
+                 int iterCount, double &xi ,int mode )
 {
 //    if( img.empty() )
 //        CV_Error( CV_StsBadArg, "image is empty" );
@@ -497,7 +497,7 @@ void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, M
 
     double cgmmklsym = fgdGMM.KLsym(bgdGMM);
     double sigma_kl_c = 10;
-    double xi = 1 - exp( -cgmmklsym / sigma_kl_c ); //PARAMETER: sigma_{KL_C}
+    xi = 1 - exp( -cgmmklsym / sigma_kl_c ); //PARAMETER: sigma_{KL_C}
 
     std::cout << "xi = " << xi << std::endl;
 
