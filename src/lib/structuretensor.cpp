@@ -109,35 +109,59 @@ cv::Mat StructureTensorImage::getImage() {
 }
 
 StructureTensor::StructureTensor() {
-    st = Mat::zeros(2,2,CV_64FC1);
+//    st = Mat::zeros(2,2,CV_64FC1);
 }
 
 StructureTensor::StructureTensor(const cv::Vec3d& t) {
-    st.create(2,2,CV_64FC1);
-    st.at<double>(0,0) = t[0];
-    st.at<double>(1,1) = t[1];
-    st.at<double>(0,1) = t[2];
-    st.at<double>(1,0) = t[2];
+    st[0] = t[0];
+    st[1] = t[1];
+    st[2] = t[2];
 }
 
 StructureTensor::StructureTensor(double p00, double p11, double p01_10)
 {
-    st.create(2,2,CV_64FC1);
-    st.at<double>(0,0) = p00;
-    st.at<double>(1,1) = p11;
-    st.at<double>(0,1) = p01_10;
-    st.at<double>(1,0) = p01_10;
+    st[0] = p00;
+    st[1] = p11;
+    st[2] = p01_10;
 }
 
 
 StructureTensor::StructureTensor(const cv::Mat& m) {
     assert(m.cols == 2 && m.rows == 2 && m.type() == CV_64FC1);
-    st = m.clone();
+    st[0] = m.at<double>(0,0);
+    st[1] = m.at<double>(1,1);
+    st[2] = m.at<double>(0,1);
 }
 
 cv::Mat StructureTensor::getMatrix() const {
-    return st;
+    cv::Mat res(2,2,CV_64FC1);
+    res.at<double>(0,0) = st[0];
+    res.at<double>(1,1) = st[1];
+    res.at<double>(0,1) = st[2];
+    res.at<double>(1,0) = st[2];
+    return res;
 }
+
+cv::Mat StructureTensor::getInverseMatrix() const {
+    cv::Mat res(2,2,CV_64FC1);
+    res.at<double>(0,0) = st[1] / (st[0] * st[1] - (st[2] * st[2]));
+    res.at<double>(1,1) = st[0] / (st[0] * st[1] - (st[2] * st[2]));
+    res.at<double>(0,1) = -st[2] / (st[0] * st[1] - (st[2] * st[2]));
+    res.at<double>(1,0) = -st[2] / (st[0] * st[1] - (st[2] * st[2]));
+    return res;
+}
+
+StructureTensor StructureTensor::getInverse() const {
+    double p00 = st[1] / (st[0] * st[1] - (st[2] * st[2]));
+    double p11 = st[0] / (st[0] * st[1] - (st[2] * st[2]));
+    double p01_10 = -st[2] / (st[0] * st[1] - (st[2] * st[2]));
+    return StructureTensor(p00, p11, p01_10);
+}
+
+double StructureTensor::multAndTrace(const StructureTensor &r) const {
+    return st[0] * r.st[0] + st[2] * r.st[2] + st[2] * r.st[2] + st[1] * r.st[1];
+}
+
 
 void matrix_sqrt(const Mat& src, Mat& res)
 {
@@ -182,17 +206,32 @@ double MS_distance2(const vector<StructureTensor>& stl, const vector<StructureTe
 
     double sum = 0.0;
 
+//    Mat l, r, l_inv, r_inv;
     for(int s = 0; s < stl.size(); s++)
     {
 
-        Mat l = stl[s].getMatrix();
-        Mat r = str[s].getMatrix();
-        Mat l_inv; 
-        invert( l , l_inv);
-        Mat r_inv;
-        invert( r, r_inv );
+//        l = stl[s].getMatrix();
+//        r = str[s].getMatrix();
+//        l_inv = stl[s].getInverse().getMatrix();
+//        r_inv = str[s].getInverse().getMatrix();
 
-        sum += (trace(l_inv * r + r_inv * l)[0] - 4.0)/4.0;
+//        cout << "new linv = " << l_inv.at<double>(0,0) << ", " << l_inv.at<double>(1,1) << ", " << l_inv.at<double>(0,1) << endl;
+
+//        invert( l , l_inv);
+//        invert( r, r_inv );
+//        cout << "old linv = " << l_inv.at<double>(0,0) << ", " << l_inv.at<double>(1,1) << ", " << l_inv.at<double>(0,1) << endl;
+
+//        sum += (trace(l_inv * r + r_inv * l)[0] - 4.0)/4.0;
+
+//        double tr = l_inv.at<double>(0,0) * r.at<double>(0,0) + l_inv.at<double>(0,1) * r.at<double>(0,1) + 
+//                    l_inv.at<double>(1,0) * r.at<double>(0,1) + l_inv.at<double>(1,1) * r.at<double>(1,1) + 
+//                    r_inv.at<double>(0,0) * l.at<double>(0,0) + r_inv.at<double>(0,1) * l.at<double>(0,1) +
+//                    r_inv.at<double>(1,0) * l.at<double>(0,1) + r_inv.at<double>(1,1) * l.at<double>(1,1); 
+//
+
+        double tr = stl[s].getInverse().multAndTrace(str[s]) + str[s].getInverse().multAndTrace(stl[s]);
+
+        sum += (tr - 4.0) / 4.0;
     }
 
     double res = sqrt( sum );

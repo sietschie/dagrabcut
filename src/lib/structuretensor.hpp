@@ -11,8 +11,11 @@ public:
     StructureTensor(const cv::Mat& m);
     StructureTensor(double p00, double p11, double p01_10);
     cv::Mat getMatrix() const;
+    cv::Mat getInverseMatrix() const;
+    StructureTensor getInverse() const;
+    double multAndTrace(const StructureTensor &r) const;
 private:
-    cv::Mat st;
+    double st[3];
 };
 
 // Multiscale
