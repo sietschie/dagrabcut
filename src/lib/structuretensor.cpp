@@ -146,7 +146,7 @@ StructureTensor::StructureTensor(double p00, double p11, double p01_10)
 StructureTensor::StructureTensor(const cv::Mat& m) {
     assert(m.cols == 2 && m.rows == 2 && m.type() == CV_64FC1);
     assert(determinant(m) != 0.0); //matrix ist nicht singulaer
-    assert(m.at<double>(0,1) != m.at<double>(1,0)); //matrix ist nicht symmetrisch
+    assert(abs( m.at<double>(0,1) - m.at<double>(1,0)) < 1e-5); //matrix ist nicht symmetrisch
     st[0] = m.at<double>(0,0);
     st[1] = m.at<double>(1,1);
     st[2] = m.at<double>(0,1);
