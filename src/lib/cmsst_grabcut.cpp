@@ -664,7 +664,7 @@ int counter=0;
         MSST_learnGMMs( MSST_img, mask, MSST_compIdxs, MSST_bgdGMM, MSST_fgdGMM );
         constructGCGraph(img, MSST_img, mask, bgdGMM, fgdGMM, MSST_bgdGMM, MSST_fgdGMM, lambda, MSST_lambda, leftW, upleftW, upW, uprightW, graph , xi);
         current_flow = estimateSegmentation( graph, mask );
-        std::cout << " diff flow:" << abs(last_flow - current_flow) << " " << std::flush;
+        std::cout << " diff flow:" << current_flow - last_flow  << " " << std::flush;
 
         if( abs(last_flow - current_flow) < eps )
             break;
@@ -734,7 +734,7 @@ void cg_cmsst_interactive_grabCut( const MSStructureTensorImage& img, Mat& mask,
         learnGMMs( img, mask, compIdxs, bgdGMM, fgdGMM );
         constructGCGraph(img, mask, bgdGMM, fgdGMM, lambda, leftW, upleftW, upW, uprightW, graph );
         current_flow = estimateSegmentation( graph, mask );
-        std::cout << " diff flow:" << abs(last_flow - current_flow) << " " << std::flush;
+        std::cout << " diff flow:" << current_flow - last_flow  << " " << std::flush;
 
         if( abs(last_flow - current_flow) < eps )
             break;
