@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <limits>
 
 #include <time.h>
 
@@ -113,21 +114,39 @@ StructureTensor::StructureTensor() {
 }
 
 StructureTensor::StructureTensor(const cv::Vec3d& t) {
-    st[0] = t[0];
-    st[1] = t[1];
-    st[2] = t[2];
+    if(t[0] * t[1] - t[2] * t[2] == 0.0) //TODO: Singulaere Matrizen anders behandeln?
+    {
+	st[0] = 1.0;
+	st[1] = 1.0;
+	st[2] = 0.0;
+    } else {
+        st[0] = t[0];
+        st[1] = t[1];
+        st[2] = t[2];
+    }
+    assert(st[0] * st[1] - st[2]*st[2] != 0.0); //matrix ist nicht singulaer
 }
 
 StructureTensor::StructureTensor(double p00, double p11, double p01_10)
 {
-    st[0] = p00;
-    st[1] = p11;
-    st[2] = p01_10;
+    if(p00 * p11 - p01_10 * p01_10 == 0.0) //TODO: Singulaere Matrizen anders behandeln?
+    {
+	st[0] = 1.0;
+	st[1] = 1.0;
+	st[2] = 0.0;
+    } else {
+        st[0] = p00;
+        st[1] = p11;
+        st[2] = p01_10;
+    }
+    assert(st[0] * st[1] - st[2]*st[2] != 0.0); //matrix ist nicht singulaer
 }
 
 
 StructureTensor::StructureTensor(const cv::Mat& m) {
     assert(m.cols == 2 && m.rows == 2 && m.type() == CV_64FC1);
+    assert(determinant(m) != 0.0); //matrix ist nicht singulaer
+    assert(m.at<double>(0,1) != m.at<double>(1,0)); //matrix ist nicht symmetrisch
     st[0] = m.at<double>(0,0);
     st[1] = m.at<double>(1,1);
     st[2] = m.at<double>(0,1);
@@ -234,7 +253,14 @@ double MS_distance2(const vector<StructureTensor>& stl, const vector<StructureTe
         sum += (tr - 4.0) / 4.0;
     }
 
-    double res = sqrt( sum );
+    double res;
+    if( abs(sum) < 1e-15 && sum < 0.0) //bei gleichen structuretensoren kommen durch rundungsfehler negative summen raus
+    {
+        res = 0.0;
+    } else {
+	assert( sum >= 0.0);
+        res = sqrt(sum);
+    }
 
     return res;
 }
@@ -703,8 +729,10 @@ double MSST_kmeans(const std::vector<std::vector<StructureTensor> > &tensors, in
                         k_best = k;
                     }
                 }
+                
+		assert(min_dist < 1e200); //zu hoch. division durch 0?
 
-                compactness += min_dist;
+		compactness += min_dist;
                 labels[i] = k_best;
             }
         }
