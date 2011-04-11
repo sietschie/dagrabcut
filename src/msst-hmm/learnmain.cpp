@@ -117,33 +117,15 @@ int main( int argc, char** argv )
 
         MSStructureTensorImage stimage(image);
 
-        Point p;
-        for( p.y = 0; p.y < image.rows; p.y++ )
-        {
-            for( p.x = 0; p.x < image.cols; p.x++ )
-            {
-                if( mask.at<uchar>(p) != class_number)
-                {
-                    MSST_bgdSamples.push_back( stimage.getTensor(p.x,p.y) );
-                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-                }
-                else // GC_FGD | GC_PR_FGD
-                {
-                    MSST_fgdSamples.push_back( stimage.getTensor(p.x,p.y) );
-                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-                }
-            }
-        }
-
         Mat bgdModel, fgdModel;
-        learnGMMfromSamples(bgdSamples, bgdModel, nr_gaussians);
-        learnGMMfromSamples(fgdSamples, fgdModel, nr_gaussians);
+        computeGMM(*filename, image, mask, model_filename, class_number, bgdModel, fgdModel);
 
         Mat MSST_bgdModel, MSST_fgdModel;
-        MSST_learnGMMfromSamples(MSST_bgdSamples, MSST_bgdModel, nr_gaussians);
-        MSST_learnGMMfromSamples(MSST_fgdSamples, MSST_fgdModel, nr_gaussians);
+        MSST_computeGMM(*filename, stimage, mask, model_filename, class_number, bgdModel, fgdModel);
 
         Mat binary_mask = mask.clone();
+
+        Point p;
         for( p.y = 0; p.y < image.rows; p.y++ )
         {
             for( p.x = 0; p.x < image.cols; p.x++ )
@@ -245,7 +227,7 @@ int main( int argc, char** argv )
     fs2 << "bgdHmm" << bgdHmm;
 
     double var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm;
-    compute_variance(input_images, bgdHmm.getModel(), fgdHmm.getModel(), nr_gaussians, class_number,
+    compute_variance(input_images, bgdHmm.getModel(), fgdHmm.getModel(), nr_gaussians, class_number, model_filename,
         var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm );
 
     fs2 << "var_bgd_kl_sym" << var_bgd_kl_sym;
@@ -259,7 +241,7 @@ int main( int argc, char** argv )
     fs2 << "MSST_bgdHmm" << MSST_bgdHmm;
 
     double msst_var_bgd_kl_sym, msst_var_bgd_kl_mr, msst_var_bgd_kl_rm, msst_var_fgd_kl_sym, msst_var_fgd_kl_mr, msst_var_fgd_kl_rm;
-    MSST_compute_variance(input_images, MSST_bgdHmm.getModel(), MSST_fgdHmm.getModel(), nr_gaussians, class_number,
+    MSST_compute_variance(input_images, MSST_bgdHmm.getModel(), MSST_fgdHmm.getModel(), nr_gaussians, class_number, model_filename,
         msst_var_bgd_kl_sym, msst_var_bgd_kl_mr, msst_var_bgd_kl_rm, msst_var_fgd_kl_sym, msst_var_fgd_kl_mr, msst_var_fgd_kl_rm );
 
     fs2 << "msst_var_bgd_kl_sym" << msst_var_bgd_kl_sym;

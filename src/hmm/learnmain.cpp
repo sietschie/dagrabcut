@@ -104,29 +104,17 @@ int main( int argc, char** argv )
 
     for(vector<string>::iterator filename = input_images.begin(); filename != input_images.end(); ++filename)    
     {
-        vector<Vec3f> bgdSamples, fgdSamples;
         HMM cur_fgdHmm, cur_bgdHmm;
 
         Mat image, mask;
         readImageAndMask(*filename, image, mask);
 
-        Point p;
-        for( p.y = 0; p.y < image.rows; p.y++ )
-        {
-            for( p.x = 0; p.x < image.cols; p.x++ )
-            {
-                if( mask.at<uchar>(p) != class_number)
-                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-                else // GC_FGD | GC_PR_FGD
-                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-            }
-        }
-
         Mat bgdModel, fgdModel;
-        learnGMMfromSamples(bgdSamples, bgdModel);
-        learnGMMfromSamples(fgdSamples, fgdModel);
+        computeGMM(*filename, image, mask, model_filename, class_number, bgdModel, fgdModel);
 
         Mat binary_mask = mask.clone();
+
+        Point p;
         for( p.y = 0; p.y < image.rows; p.y++ )
         {
             for( p.x = 0; p.x < image.cols; p.x++ )
@@ -134,6 +122,7 @@ int main( int argc, char** argv )
                 binary_mask.at<uchar>(p) = mask.at<uchar>(p) == class_number ? 1 : 0;
             }
         }
+
 
         //Mat binary_mask = mask & 1;
         //Mat binary_mask = mask & class_number;
@@ -214,7 +203,7 @@ int main( int argc, char** argv )
     fs2 << "bgdHmm" << bgdHmm;
 
     double var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm;
-    compute_variance(input_images, bgdHmm.getModel(), fgdHmm.getModel(), nr_gaussians, class_number,
+    compute_variance(input_images, bgdHmm.getModel(), fgdHmm.getModel(), nr_gaussians, class_number, model_filename,
         var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm );
 
     fs2 << "var_bgd_kl_sym" << var_bgd_kl_sym;

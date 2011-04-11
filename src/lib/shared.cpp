@@ -1,6 +1,7 @@
 #include "shared.hpp"
 
 #include <iostream>
+#include <fstream>
 #include "opencv2/highgui/highgui.hpp"
 #include "gmm.hpp"
 #include "msst_gmm.hpp"
@@ -31,7 +32,7 @@ void readImageAndMask(string filename, Mat& image, Mat& mask)
     fs["mask"] >> mask;
 }
 
-double compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean_fgdModel, int nr_gaussians, int class_number,
+void compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean_fgdModel, int nr_gaussians, int class_number, string model_filename,
         double &var_bgd_kl_sym, double &var_bgd_kl_mr, double &var_bgd_kl_rm, double &var_fgd_kl_sym, double &var_fgd_kl_mr, double &var_fgd_kl_rm )
 {
     GMM mean_bgdGMM, mean_fgdGMM;
@@ -52,21 +53,8 @@ double compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean
         Mat image, mask;
         readImageAndMask(*filename, image, mask);
 
-        Point p;
-        for( p.y = 0; p.y < image.rows; p.y++ )
-        {
-            for( p.x = 0; p.x < image.cols; p.x++ )
-            {
-                if( mask.at<uchar>(p) != class_number)
-                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-                else // GC_FGD | GC_PR_FGD
-                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
-            }
-        }
-
         Mat bgdModel, fgdModel;
-        learnGMMfromSamples(bgdSamples, bgdModel, nr_gaussians);
-        learnGMMfromSamples(fgdSamples, fgdModel, nr_gaussians);
+        computeGMM(*filename, image, mask, model_filename, class_number, bgdModel, fgdModel);
 
         GMM bgdGMM, fgdGMM;
         bgdGMM.setModel(bgdModel);
@@ -91,7 +79,7 @@ double compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean
     
 }
 
-double MSST_compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean_fgdModel, int nr_gaussians, int class_number,
+void MSST_compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat mean_fgdModel, int nr_gaussians, int class_number, string model_filename,
         double &var_bgd_kl_sym, double &var_bgd_kl_mr, double &var_bgd_kl_rm, double &var_fgd_kl_sym, double &var_fgd_kl_mr, double &var_fgd_kl_rm )
 {
     MSST_GMM mean_bgdGMM, mean_fgdGMM;
@@ -114,21 +102,8 @@ double MSST_compute_variance(vector<string> input_images, Mat mean_bgdModel, Mat
 
         MSStructureTensorImage stimage(image);
 
-        Point p;
-        for( p.y = 0; p.y < image.rows; p.y++ )
-        {
-            for( p.x = 0; p.x < image.cols; p.x++ )
-            {
-                if( mask.at<uchar>(p) != class_number)
-                    bgdSamples.push_back( stimage.getTensor(p.x, p.y) );
-                else // GC_FGD | GC_PR_FGD
-                    fgdSamples.push_back( stimage.getTensor(p.x, p.y) );
-            }
-        }
-
         Mat bgdModel, fgdModel;
-        MSST_learnGMMfromSamples(bgdSamples, bgdModel, nr_gaussians);
-        MSST_learnGMMfromSamples(fgdSamples, fgdModel, nr_gaussians);
+        MSST_computeGMM(*filename, stimage, mask, model_filename, class_number, bgdModel, fgdModel);
 
         MSST_GMM bgdGMM, fgdGMM;
         bgdGMM.setModel(bgdModel);
@@ -227,4 +202,108 @@ double compute_probability(double dist, double variance)
 
     return res;
 }
+
+void MSST_computeGMM(std::string filename, const MSStructureTensorImage& stimage, const cv::Mat& mask, std::string model_filename, int class_number, cv::Mat& bgdModel, cv::Mat& fgdModel)
+{
+    size_t pos = model_filename.find_last_of('/');
+    string model_path = model_filename.substr(0,pos+1);
+
+
+    pos = filename.find_last_of('/');
+    string image_basename = filename.substr(pos+1);
+
+    string gmm_filename = model_path + image_basename + ".msst_gmm.yml";
+
+    cout << "model_path = " << model_path;
+    cout << "  image_basename = " << image_basename;
+    cout << "  gmm_filename = " << gmm_filename << endl;
+
+//    ifstream ifs(gmm_filename, ifstream::in);
+    ifstream ifs(gmm_filename.c_str(), ifstream::in);
+    if(ifs.good())
+    {
+        cout << "DATEI EXISTIERT BEREITS" << endl;
+        FileStorage fs(gmm_filename, FileStorage::READ);
+        fs["bgdModel"] >> bgdModel;
+        fs["fgdModel"] >> fgdModel;
+        fs.release();
+    }
+    else {
+        vector<vector<StructureTensor> > bgdSamples, fgdSamples;
+
+        Point p;
+        for( p.y = 0; p.y < stimage.rows; p.y++ )
+        {
+            for( p.x = 0; p.x < stimage.cols; p.x++ )
+            {
+                if( mask.at<uchar>(p) != class_number)
+                    bgdSamples.push_back( stimage.getTensor(p.x, p.y) );
+                else // GC_FGD | GC_PR_FGD
+                    fgdSamples.push_back( stimage.getTensor(p.x, p.y) );
+            }
+        }
+
+        MSST_learnGMMfromSamples(bgdSamples, bgdModel);
+        MSST_learnGMMfromSamples(fgdSamples, fgdModel);
+
+        FileStorage fs(gmm_filename, FileStorage::WRITE);
+        fs << "bgdModel" << bgdModel;
+        fs << "fgdModel" << fgdModel;
+        fs.release();
+
+    }
+}
+
+void computeGMM(std::string filename, const cv::Mat& image, const cv::Mat& mask, std::string model_filename, int class_number, cv::Mat& bgdModel, cv::Mat& fgdModel)
+{
+
+    size_t pos = model_filename.find_last_of('/');
+    string model_path = model_filename.substr(0,pos+1);
+
+
+    pos = filename.find_last_of('/');
+    string image_basename = filename.substr(pos+1);
+
+    string gmm_filename = model_path + image_basename + ".gmm.yml";
+
+    cout << "model_path = " << model_path;
+    cout << "  image_basename = " << image_basename;
+    cout << "  gmm_filename = " << gmm_filename << endl;
+
+//    ifstream ifs(gmm_filename, ifstream::in);
+    ifstream ifs(gmm_filename.c_str(), ifstream::in);
+    if(ifs.good())
+    {
+        cout << "DATEI EXISTIERT BEREITS" << endl;
+        FileStorage fs(gmm_filename, FileStorage::READ);
+        fs["bgdModel"] >> bgdModel;
+        fs["fgdModel"] >> fgdModel;
+        fs.release();
+    }
+    else {
+        vector<Vec3f> bgdSamples, fgdSamples;
+
+        Point p;
+        for( p.y = 0; p.y < image.rows; p.y++ )
+        {
+            for( p.x = 0; p.x < image.cols; p.x++ )
+            {
+                if( mask.at<uchar>(p) != class_number)
+                    bgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+                else // GC_FGD | GC_PR_FGD
+                    fgdSamples.push_back( (Vec3f)image.at<Vec3b>(p) );
+            }
+        }
+
+        learnGMMfromSamples(bgdSamples, bgdModel);
+        learnGMMfromSamples(fgdSamples, fgdModel);
+
+        FileStorage fs(gmm_filename, FileStorage::WRITE);
+        fs << "bgdModel" << bgdModel;
+        fs << "fgdModel" << fgdModel;
+        fs.release();
+
+    }
+}
+
 

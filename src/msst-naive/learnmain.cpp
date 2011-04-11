@@ -131,7 +131,7 @@ int main( int argc, char** argv )
     fs2 << "MSST_bgdModel" << MSST_bgdModel;
 
     double var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm;
-    compute_variance(input_images, bgdModel, fgdModel, nr_gaussians, class_number,
+    compute_variance(input_images, bgdModel, fgdModel, nr_gaussians, class_number, model_filename,
         var_bgd_kl_sym, var_bgd_kl_mr, var_bgd_kl_rm, var_fgd_kl_sym, var_fgd_kl_mr, var_fgd_kl_rm );
 
     fs2 << "var_bgd_kl_sym" << var_bgd_kl_sym;
@@ -142,7 +142,7 @@ int main( int argc, char** argv )
     fs2 << "var_fgd_kl_rm" << var_fgd_kl_rm;
 
     double msst_var_bgd_kl_sym, msst_var_bgd_kl_mr, msst_var_bgd_kl_rm, msst_var_fgd_kl_sym, msst_var_fgd_kl_mr, msst_var_fgd_kl_rm;
-    MSST_compute_variance(input_images, MSST_bgdModel, MSST_fgdModel, nr_gaussians, class_number,
+    MSST_compute_variance(input_images, MSST_bgdModel, MSST_fgdModel, nr_gaussians, class_number, model_filename,
         msst_var_bgd_kl_sym, msst_var_bgd_kl_mr, msst_var_bgd_kl_rm, msst_var_fgd_kl_sym, msst_var_fgd_kl_mr, msst_var_fgd_kl_rm );
 
     fs2 << "msst_var_bgd_kl_sym" << msst_var_bgd_kl_sym;
