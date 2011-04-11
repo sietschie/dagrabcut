@@ -121,7 +121,7 @@ int main( int argc, char** argv )
         computeGMM(*filename, image, mask, model_filename, class_number, bgdModel, fgdModel);
 
         Mat MSST_bgdModel, MSST_fgdModel;
-        MSST_computeGMM(*filename, stimage, mask, model_filename, class_number, bgdModel, fgdModel);
+        MSST_computeGMM(*filename, stimage, mask, model_filename, class_number, MSST_bgdModel, MSST_fgdModel);
 
         Mat binary_mask = mask.clone();
 
