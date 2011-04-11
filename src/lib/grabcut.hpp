@@ -7,7 +7,7 @@
 
 using namespace cv;
 
-void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
+void cg_grabCut( const Mat& img, Mat& mask, Mat& initial_mask, Rect rect,
                  Mat& bgdModel, Mat& fgdModel,
                  int iterCount, int mode = GC_EVAL );
 

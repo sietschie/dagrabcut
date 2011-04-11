@@ -41,7 +41,6 @@
 
 //#include "precomp.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
 #include "maxflow/graph.h"
 #include <limits>
 
@@ -478,7 +477,7 @@ double estimateSegmentation( Graph<double, double, double>& graph, Mat& mask )
     return flow;
 }
 
-void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, Mat& mask, Rect rect,
+void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, Mat& mask, Mat& initial_mask, Mat& initial_mask_color, Mat& initial_mask_msst, Rect rect,
                  Mat& bgdModel, Mat& fgdModel, Mat& MSST_bgdModel, Mat& MSST_fgdModel,
                  int iterCount, double &xi ,int mode )
 {
@@ -537,7 +536,7 @@ void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, M
         }
     }
 
-    imwrite("firstmask.c.bmp", mask);
+    initial_mask_msst = mask.clone(); 
 
     for( p.y = 0; p.y < mask.rows; p.y++ )
     {
@@ -556,7 +555,7 @@ void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, M
         }
     }
 
-    imwrite("firstmask.st.bmp", mask);
+    initial_mask_color = mask.clone(); 
 
 int counter=0;
 
@@ -628,7 +627,7 @@ int counter=0;
         }
     }
 
-    imwrite("firstmask.bmp", mask);
+    initial_mask = mask.clone();
 
     if( iterCount <= 0)
         return;
