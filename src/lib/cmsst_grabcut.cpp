@@ -164,7 +164,7 @@ void calcNWeights( const Mat& img, const MSStructureTensorImage& MSST_img, Mat& 
             {
                 double MSST_dist = MS_distance2(MSST_color,MSST_img.getTensor(x-1,y-1));
                 Vec3d diff = color - (Vec3d)img.at<Vec3b>(y-1,x-1);
-                leftW.at<double>(y,x) =xi * (gammaDivSqrt2 * exp(-beta*diff.dot(diff))) + (1-xi)*(MSST_gammaDivSqrt2 * exp(-MSST_beta*MSST_dist*MSST_dist));
+                upleftW.at<double>(y,x) =xi * (gammaDivSqrt2 * exp(-beta*diff.dot(diff))) + (1-xi)*(MSST_gammaDivSqrt2 * exp(-MSST_beta*MSST_dist*MSST_dist));
             }
             else
                 upleftW.at<double>(y,x) = 0;
@@ -172,7 +172,7 @@ void calcNWeights( const Mat& img, const MSStructureTensorImage& MSST_img, Mat& 
             {
                 double MSST_dist = MS_distance2(MSST_color,MSST_img.getTensor(x,y-1));
                 Vec3d diff = color - (Vec3d)img.at<Vec3b>(y-1,x);
-                leftW.at<double>(y,x) =xi * (gamma * exp(-beta*diff.dot(diff))) + (1-xi)*(MSST_gamma * exp(-MSST_beta*MSST_dist*MSST_dist));
+                upW.at<double>(y,x) =xi * (gamma * exp(-beta*diff.dot(diff))) + (1-xi)*(MSST_gamma * exp(-MSST_beta*MSST_dist*MSST_dist));
             }
             else
                 upW.at<double>(y,x) = 0;
@@ -180,7 +180,7 @@ void calcNWeights( const Mat& img, const MSStructureTensorImage& MSST_img, Mat& 
             {
                 double MSST_dist = MS_distance2(MSST_color,MSST_img.getTensor(x+1,y-1));
                 Vec3d diff = color - (Vec3d)img.at<Vec3b>(y-1,x+1);
-                leftW.at<double>(y,x) =xi * (gammaDivSqrt2 * exp(-beta*diff.dot(diff))) + (1-xi)*(MSST_gammaDivSqrt2 * exp(-MSST_beta*MSST_dist*MSST_dist));
+                uprightW.at<double>(y,x) =xi * (gammaDivSqrt2 * exp(-beta*diff.dot(diff))) + (1-xi)*(MSST_gammaDivSqrt2 * exp(-MSST_beta*MSST_dist*MSST_dist));
             }
             else
                 uprightW.at<double>(y,x) = 0;
