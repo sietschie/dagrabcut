@@ -42,6 +42,9 @@ public:
         return xi;
     }
     Mat mask;
+    Mat initial_mask;
+    Mat initial_mask_color;
+    Mat initial_mask_msst;
 private:
     const string* winName;
     const Mat* image;
@@ -96,7 +99,7 @@ int GCApplication::nextIter(int max_iterations = 2)
     isInitialized = true;
     Rect rect;
 
-    cg_cmsst_grabCut( *image, MSST_image, mask, rect, bgdModel, fgdModel, MSST_bgdModel, MSST_fgdModel, max_iterations, xi );
+    cg_cmsst_grabCut( *image, MSST_image, mask, initial_mask, initial_mask_color, initial_mask_msst, rect, bgdModel, fgdModel, MSST_bgdModel, MSST_fgdModel, max_iterations, xi );
 
     iterCount += max_iterations;
 
@@ -259,7 +262,11 @@ int main( int argc, char** argv )
     }
 
     FileStorage fs2(output_filename, FileStorage::WRITE);
+    fs2 << "input_image" << input_image;
     fs2 << "mask" << gcapp.mask;
+    fs2 << "initial_mask" << gcapp.initial_mask;
+    fs2 << "initial_mask_color" << gcapp.initial_mask_color;
+    fs2 << "initial_mask_msst" << gcapp.initial_mask_msst;
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
     fs2 << "MSST_fgdModel" << MSST_fgdModel;

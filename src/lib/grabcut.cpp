@@ -355,7 +355,7 @@ double estimateSegmentation( Graph<double, double, double>& graph, Mat& mask )
     return flow;
 }
 
-void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
+void cg_grabCut( const Mat& img, Mat& mask, Mat& initial_mask, Rect rect,
                  Mat& bgdModel, Mat& fgdModel,
                  int iterCount, int mode )
 {
@@ -399,6 +399,7 @@ void cg_grabCut( const Mat& img, Mat& mask, Rect rect,
         }
     }
 
+    initial_mask = mask.clone();
 
     if( iterCount <= 0)
         return;

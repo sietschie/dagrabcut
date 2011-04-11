@@ -37,6 +37,7 @@ public:
         return iterCount;
     }
     Mat mask;
+    Mat initial_mask;
 private:
     const string* winName;
     const Mat* image;
@@ -83,7 +84,7 @@ int GCApplication::nextIter(int max_iterations = 2)
     isInitialized = true;
     Rect rect;
 
-    cg_grabCut( *image, mask, rect, bgdModel, fgdModel, max_iterations );
+    cg_grabCut( *image, mask, initial_mask, rect, bgdModel, fgdModel, max_iterations );
 
     iterCount += max_iterations;
 
@@ -236,7 +237,9 @@ int main( int argc, char** argv )
     }
 
     FileStorage fs2(output_filename, FileStorage::WRITE);
+    fs2 << "input_image" << input_image;
     fs2 << "mask" << gcapp.mask;
+    fs2 << "initial_mask" << gcapp.initial_mask;
     fs2 << "fgdModel" << fgdModel;
     fs2 << "bgdModel" << bgdModel;
 
