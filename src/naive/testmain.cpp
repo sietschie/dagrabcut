@@ -253,6 +253,14 @@ int main( int argc, char** argv )
 
     cout << "fgd: " << fgd_rate << ", bgd: " << bgd_rate << ", joint: " << joint_rate;
 
+    fs2 << "true positive" << tp;
+    fs2 << "true negative" << tn;
+    fs2 << "false positive" << fp;
+    fs2 << "false negative" << fn;
+
+    fs2 << "fgd" << fgd_rate;
+    fs2 << "bgd" << bgd_rate;
+    fs2 << "joint" << joint_rate;
 
 
     {
@@ -268,6 +276,7 @@ int main( int argc, char** argv )
         cout << " ,prob fgd KL result input: " << compute_probability( kl_div_r_i, var_fgd_kl_rm);
         cout << " ,fgd KL sym: " << kl_sym;
         cout << " ,prob fgd KL sym: " << compute_probability( kl_sym, var_fgd_kl_sym);
+        fs2 << "prob fgd KL sym" << compute_probability( kl_sym, var_fgd_kl_sym);
     }
 
 
