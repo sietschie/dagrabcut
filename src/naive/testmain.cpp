@@ -219,20 +219,25 @@ int main( int argc, char** argv )
     readImageAndMask(input_image, image, mask);
 
     const string winName = "image";
-    cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
-
-    gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
-    gcapp.showImage();
 
     if(interactive)
+        cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
+
+    gcapp.setImageAndWinName( image, winName, bgdModel, fgdModel );
+
+    if(interactive)
+    {
+        gcapp.showImage();
         cvWaitKey(1000);
+    }
 
     int iterCount = gcapp.getIterCount();
     cout << "<" << iterCount << "... ";
     int newIterCount = gcapp.nextIter(max_iterations);
     if( newIterCount > iterCount )
     {
-        gcapp.showImage();
+        if(interactive)
+            gcapp.showImage();
         cout << newIterCount << ">" << endl;
     }
 
@@ -299,6 +304,7 @@ int main( int argc, char** argv )
         cvWaitKey(0);
 
 exit_main:
-    cvDestroyWindow( winName.c_str() );
+    if(interactive)
+        cvDestroyWindow( winName.c_str() );
     return 0;
 }

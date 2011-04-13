@@ -244,10 +244,12 @@ int main( int argc, char** argv )
     MSStructureTensorImage MSST_image(image);
 
     const string winName = "image";
-    cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
+    if(interactive)
+        cvNamedWindow( winName.c_str(), CV_WINDOW_AUTOSIZE );
 
     gcapp.setImageAndWinName( image, MSST_image, winName, bgdModel, fgdModel, MSST_bgdModel, MSST_fgdModel );
-    gcapp.showImage();
+    if(interactive)
+        gcapp.showImage();
 
     if(interactive)
         cvWaitKey(0);
@@ -257,7 +259,8 @@ int main( int argc, char** argv )
     int newIterCount = gcapp.nextIter(max_iterations);
     if( newIterCount > iterCount )
     {
-        gcapp.showImage();
+        if(interactive)
+            gcapp.showImage();
         cout << newIterCount << ">" << endl;
     }
 
@@ -362,6 +365,7 @@ int main( int argc, char** argv )
         cvWaitKey(0);
 
 exit_main:
-    cvDestroyWindow( winName.c_str() );
+    if(interactive)
+        cvDestroyWindow( winName.c_str() );
     return 0;
 }
