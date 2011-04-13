@@ -254,7 +254,7 @@ double MS_distance2(const vector<StructureTensor>& stl, const vector<StructureTe
     }
 
     double res;
-    if( abs(sum) < 1e-15 && sum < 0.0) //bei gleichen structuretensoren kommen durch rundungsfehler negative summen raus
+    if( abs(sum) < 1e-10 && sum < 0.0) //bei gleichen structuretensoren kommen durch rundungsfehler negative summen raus
     {
         res = 0.0;
     } else {
