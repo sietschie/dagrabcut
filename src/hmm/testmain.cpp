@@ -235,7 +235,8 @@ int main( int argc, char** argv )
     int newIterCount = gcapp.nextIter(max_iterations);
     if( newIterCount > iterCount )
     {
-        gcapp.showImage();
+        if(interactive)
+            gcapp.showImage();
         cout << newIterCount << ">" << endl;
     }
 
