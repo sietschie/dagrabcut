@@ -11,5 +11,6 @@ add_subdirectory(st-test)
 add_subdirectory(st-interactive)
 add_subdirectory(msst-interactive)
 add_subdirectory(tests)
+add_subdirectory(refine-mscr)
 
 
