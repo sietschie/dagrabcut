@@ -160,8 +160,6 @@ ST_Gaussian::~ST_Gaussian() {
 }
 
 double MSST_Gaussian::KLdiv(const MSST_Gaussian& g2) const { 
-    assert(1==0);
-
     double dist = MS_distance2(mean, g2.mean);
 
     double res = ((dist * dist) / (2.0 * g2.cov)) + ( cov / g2.cov - 1 - log( cov / g2.cov )) / 2.0;
