@@ -159,8 +159,19 @@ ST_Gaussian::~ST_Gaussian() {
 //    delete cov.ptr<double>(0);
 }
 
-double MSST_Gaussian::KLdiv(const MSST_Gaussian& g2) { assert(1==0); return 0.0; }
-double MSST_Gaussian::KLsym(const MSST_Gaussian& g2) { assert(1==0); return 0.0; }
+double MSST_Gaussian::KLdiv(const MSST_Gaussian& g2) const { 
+    assert(1==0);
+
+    double dist = MS_distance2(mean, g2.mean);
+
+    double res = ((dist * dist) / (2.0 * g2.cov)) + ( cov / g2.cov - 1 - log( cov / g2.cov )) / 2.0;
+ 
+    return res; 
+}
+
+double MSST_Gaussian::KLsym(const MSST_Gaussian& g2) const { 
+    return KLdiv(g2) + g2.KLdiv(*this); //TODO: explizite Formel benutzen 
+}
 
 void MSST_Gaussian::compute_from_samples(std::vector<std::vector<StructureTensor> > samples) {
 //    std::cout << "samples.size() = " << samples.size() << std::endl;
