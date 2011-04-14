@@ -159,8 +159,8 @@ ST_Gaussian::~ST_Gaussian() {
 //    delete cov.ptr<double>(0);
 }
 
-double MSST_Gaussian::KLdiv(const MSST_Gaussian& g2) { assert(1); return 0.0; }
-double MSST_Gaussian::KLsym(const MSST_Gaussian& g2) { assert(1); return 0.0; }
+double MSST_Gaussian::KLdiv(const MSST_Gaussian& g2) { assert(1==0); return 0.0; }
+double MSST_Gaussian::KLsym(const MSST_Gaussian& g2) { assert(1==0); return 0.0; }
 
 void MSST_Gaussian::compute_from_samples(std::vector<std::vector<StructureTensor> > samples) {
 //    std::cout << "samples.size() = " << samples.size() << std::endl;
@@ -173,5 +173,10 @@ void MSST_Gaussian::compute_from_samples(std::vector<std::vector<StructureTensor
 
 }
 
-
-
+void MSST_Gaussian::init_zero(int numScales) {
+    for(int i=0;i<numScales;i++) {
+        StructureTensor ts(1,1,0);
+        mean.push_back(ts);
+    }
+    cov = 1.0;
+}

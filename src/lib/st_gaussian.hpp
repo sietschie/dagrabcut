@@ -26,6 +26,7 @@ public:
     double KLdiv(const MSST_Gaussian& g2);
     double KLsym(const MSST_Gaussian& g2);
     void compute_from_samples(std::vector<std::vector<StructureTensor> > samples);
+    void init_zero(int scales);
 };
 
 void readGaussian(const cv::FileNode& fn, MSST_Gaussian& gauss);

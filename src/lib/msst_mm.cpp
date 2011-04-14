@@ -202,9 +202,13 @@ template <class Component>
 void MSST_MM<Component>::endLearning()
 {
     int numSamples = 0;
+    int numScales = 0;
     for(int i=0; i<samples.size(); i++)
     {
         numSamples += samples[i].size();
+        if( samples[i].size() > 0) {
+            numScales = samples[i][0].size();
+        }
     }
 
     for(int i=0; i<samples.size(); i++)
@@ -212,6 +216,7 @@ void MSST_MM<Component>::endLearning()
         if(samples[i].size() == 0)
         {
             components[i].weight = 0.0;
+            components[i].gauss.init_zero(numScales);
         } else {
             components[i].gauss.compute_from_samples(samples[i]);
             components[i].weight = samples[i].size() / (double) numSamples;
