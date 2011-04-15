@@ -9,7 +9,10 @@ void aosiso(const Mat &image, const Mat &d, double t, Mat &result); // image -> 
 cv::Mat nldiff(const cv::Mat &src, double stepsize, int numsteps, double sigma, double parameter_p)
 {
     Mat intermediate;
-    src.convertTo(intermediate, CV_64FC3);
+    if( src.type() != CV_64FC3)
+        src.convertTo(intermediate, CV_64FC3);
+    else
+        intermediate = src.clone();
 
     for(int i=0;i<numsteps;i++) {
 
@@ -60,7 +63,10 @@ cv::Mat nldiff(const cv::Mat &src, double stepsize, int numsteps, double sigma, 
    }
 
     Mat result;
-    intermediate.convertTo(result, CV_8UC3);
+    if( src.type() != CV_64FC3)
+        intermediate.convertTo(result, src.type());
+    else
+        result = intermediate.clone();
 
     return result;
 }

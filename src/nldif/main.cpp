@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "nldiff.hpp"
+#include "../lib/nldiff.hpp"
 
 using namespace std;
 using namespace cv;
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     imshow( winName, image );
     cvWaitKey(0);
 
-    Mat result = nldiff(image, 100.0, 10, 2, 0.6);
+    Mat result = nldiff(image, 1000.0, 2,1);
 
     imshow( winName, result );
     cvWaitKey(0);
