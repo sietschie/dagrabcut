@@ -73,7 +73,7 @@ cv::Mat nldiff(const cv::Mat &src, double stepsize, int numsteps, double sigma, 
 
 void thomas(const Mat &a, const Mat &b, const Mat &c, const Mat &d, Mat &x) //a -> Hauptdiagonale, b-> 1. obere Nebendiagonale, c-> 1. untere Nebendiagonale, d -> Mat(c,a,b) * x = d
 {
-    double n = a.cols;
+    double n = a.rows;
 
     Mat m(a.size(), a.type(), Scalar(0,0));
     Mat l(b.size(), b.type(), Scalar(0,0));
