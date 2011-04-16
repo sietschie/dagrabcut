@@ -65,7 +65,7 @@ int main( int argc, char** argv )
 
     int c = cvWaitKey(0);
 
-    for(double sigma = 1.0; sigma <= 32.0; sigma += 2.0)
+    for(double sigma = 1.0; sigma <= 4.0; sigma += 1.0)
     {
         StructureTensorImage sti(image, sigma);
         Mat stimage = sti.getImage();
@@ -73,9 +73,9 @@ int main( int argc, char** argv )
         cout << "image.at<Vec3d>(5,5) = " << image.at<Vec3d>(5,5)[1] << endl;
         cout << "stimage.at<Vec3d>(5,5) = " << stimage.at<Vec3d>(5,5)[1] << endl;
 
-//        gcapp.setImageAndWinName( stimage, winName );
-//        gcapp.showImage();
-//        c = cvWaitKey(0);
+        //gcapp.setImageAndWinName( stimage, winName );
+        //gcapp.showImage();
+        //c = cvWaitKey(0);
 
         Mat transformed;
         stimage.convertTo(transformed, CV_8UC3);
@@ -105,7 +105,7 @@ int main( int argc, char** argv )
         gcapp.showImage();
         c = cvWaitKey(0);
 
-        Mat labels;
+/*        Mat labels;
         const vector<StructureTensor> &tensors = sti.getAllTensors();
         vector<StructureTensor> centers;
 
@@ -146,7 +146,7 @@ int main( int argc, char** argv )
         }
         gcapp.setImageAndWinName( clusteredimage, winName );
         gcapp.showImage();
-        c = cvWaitKey(0);
+        c = cvWaitKey(0);*/
    }
  
 

@@ -317,7 +317,7 @@ void constructGCGraph( const StructureTensorImage& img, const Mat& mask, const S
                 toSink = -log( fgdGMM(color) );
 //                fromSource = -log( 100 );
 //                toSink = -log( 1000000000 );
-                std::cout << "bgd = " << bgdGMM(color) << "  fgd = " << fgdGMM(color) << std::endl;
+                //std::cout << "bgd = " << bgdGMM(color) << "  fgd = " << fgdGMM(color) << std::endl;
             }
             else if( mask.at<uchar>(p) == GC_BGD )
             {

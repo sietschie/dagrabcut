@@ -7,6 +7,8 @@
 
 #include <time.h>
 
+#include "nldiff.hpp"
+
 using namespace cv;
 using namespace std;
 
@@ -26,12 +28,12 @@ StructureTensor StructureTensorImage::getTensor(int x, int y) const
 
 MSStructureTensorImage::MSStructureTensorImage(const cv::Mat& image)
 {
-    double sigma = 3.0;
+    double sigma = 1.0;
     tensors.resize(image.cols * image.rows);
     cols = image.cols;
     rows = image.rows;
 
-    for(;sigma < 10; sigma += 1.0)
+    for(;sigma < 5; sigma += 1.0)
     {
         StructureTensorImage sti(image, sigma);
         const vector<StructureTensor> &st = sti.getAllTensors();
@@ -61,12 +63,18 @@ vector<StructureTensor> MSStructureTensorImage::getTensor(int x, int y) const
 
 StructureTensorImage::StructureTensorImage(const cv::Mat& image, double sigma)
 {
+    Mat blurredimage;
+
+    // average on some of the pixels <- size of the window = scale?
+    int ksize = ((int)(4*sigma)) * 2 + 1;
+    GaussianBlur(image, blurredimage, Size(ksize, ksize), sigma);
+
     // Compute Image gradient in both directions for each channel
     cv::Mat xgrad;
-    cv::Sobel(image, xgrad, CV_64F, 1, 0, 3);
+    cv::Sobel(blurredimage, xgrad, CV_64F, 1, 0, 3);
 
     cv::Mat ygrad;
-    cv::Sobel(image, ygrad, CV_64F, 0, 1, 3);
+    cv::Sobel(blurredimage, ygrad, CV_64F, 0, 1, 3);
 
     cols = image.cols;
     rows = image.rows;
@@ -89,9 +97,8 @@ StructureTensorImage::StructureTensorImage(const cv::Mat& image, double sigma)
         }
     }
 
-    // average on some of the pixels <- size of the window = scale?
-    int ksize = ((int)(4*sigma)) * 2 + 1;
-    GaussianBlur(stmat, blurredstmat, Size(ksize, ksize), sigma);
+
+    blurredstmat = nldiff(stmat, 100, 5);
 
 //    blurredstmat = stmat;
 
