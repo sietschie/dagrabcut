@@ -272,7 +272,7 @@ StructureTensor compute_mean(const std::vector<StructureTensor>& list){
 
     for(int i=0; i<list.size(); i++)
     {
-        Mat st = list[0].getMatrix();
+        Mat st = list[i].getMatrix();
         A += st;
         Mat st_inv;
         invert(st, st_inv);
@@ -334,7 +334,7 @@ vector<StructureTensor> MS_compute_mean(const std::vector<std::vector<StructureT
 
         for(int i=0; i<list.size(); i++)
         {
-            st = list[0][s].getMatrix();
+            st = list[i][s].getMatrix();
             A += st;
             invert(st, st_inv);
             B += st_inv;
