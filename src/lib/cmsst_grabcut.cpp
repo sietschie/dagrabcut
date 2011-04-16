@@ -523,13 +523,26 @@ void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, M
     {
         for( p.x = 0; p.x < mask.cols; p.x++ )
         {
+            double bgd = bgdGMM(img.at<Vec3b>(p));
+            double fgd = fgdGMM(img.at<Vec3b>(p));
+
+            if( bgd > fgd)
+                mask.at<uchar>(p.y, p.x) = GC_PR_BGD;
+            else
+                mask.at<uchar>(p.y, p.x) = GC_PR_FGD;
+        }
+    }
+
+    initial_mask_color = mask.clone(); 
+
+    for( p.y = 0; p.y < mask.rows; p.y++ )
+    {
+        for( p.x = 0; p.x < mask.cols; p.x++ )
+        {
             double MSST_bgd = MSST_bgdGMM(MSST_img.getTensor(p.x,p.y));
             double MSST_fgd = MSST_fgdGMM(MSST_img.getTensor(p.x,p.y));
 
-            double bgd = bgdGMM(img.at<Vec3b>(p));
-            double fgd = fgdGMM(img.at<Vec3b>(p));
-//            if( (xi * bgd) + (1-xi)* MSST_bgd > (xi * fgd) + (1-xi)* MSST_fgd)
-            if( bgd > fgd)
+            if( MSST_bgd > MSST_fgd)
                 mask.at<uchar>(p.y, p.x) = GC_PR_BGD;
             else
                 mask.at<uchar>(p.y, p.x) = GC_PR_FGD;
@@ -547,83 +560,11 @@ void cg_cmsst_grabCut( const Mat& img, const MSStructureTensorImage& MSST_img, M
 
             double bgd = bgdGMM(img.at<Vec3b>(p));
             double fgd = fgdGMM(img.at<Vec3b>(p));
-//            if( (xi * bgd) + (1-xi)* MSST_bgd > (xi * fgd) + (1-xi)* MSST_fgd)
-            if( MSST_bgd > MSST_fgd)
-                mask.at<uchar>(p.y, p.x) = GC_PR_BGD;
-            else
-                mask.at<uchar>(p.y, p.x) = GC_PR_FGD;
-        }
-    }
 
-    initial_mask_color = mask.clone(); 
-
-int counter=0;
-
-    for( p.y = 0; p.y < mask.rows; p.y++ )
-    {
-        for( p.x = 0; p.x < mask.cols; p.x++ )
-        {
-            double MSST_bgd = MSST_bgdGMM(MSST_img.getTensor(p.x,p.y));
-            double MSST_fgd = MSST_fgdGMM(MSST_img.getTensor(p.x,p.y));
-
-            double bgd = bgdGMM(img.at<Vec3b>(p));
-            double fgd = fgdGMM(img.at<Vec3b>(p));
-
-//            std::cout << "2msst: bgd= " << MSST_bgd * MSST_bgd * MSST_bgd << "  fgd= " << MSST_fgd * MSST_fgd * MSST_fgd << "  col: bgd= " << bgd << "  fgd= " << fgd <<  "\n";
-//            std::cout << "3msst: bgd= " << pow(MSST_bgd, -1.0+xi) << "  fgd= " << pow( MSST_fgd, -1.0+xi) << "  col: bgd= " << pow(bgd,-xi) << "  fgd= " << pow(fgd,-xi) <<  "\n";
-
-/*            double com_bgd = (xi * bgd) + (1-xi)* pow(MSST_bgd,3);
-            double com_fgd = (xi * fgd) + (1-xi)* pow(MSST_fgd, 3);
-
-            assert(bgd != 0.0);
-            assert(MSST_bgd != 0.0);
-
-            double quot_color = fgd / bgd;
-            double quot_st = MSST_fgd / MSST_bgd;
-
-
-        if( (bgd > fgd) != (MSST_bgd > MSST_fgd) ) {
-            std::cout << "1msst: bgd= " << MSST_bgd << "  fgd= " << MSST_fgd << "  col: bgd= " << bgd << "  fgd= " << fgd << "\n";
-            std::cout << "fgd = " << fgd * MSST_fgd << "  bgd = " << bgd * MSST_bgd << std::endl; 
-            std::cout << "log(fgd) = " << log(fgd * MSST_fgd) << "  log(bgd) = " << log(bgd * MSST_bgd) << std::endl; 
-            std::cout << "log(fgd) = " << log(fgd) + log(MSST_fgd) << "  log(bgd) = " << log(bgd) + log(MSST_bgd) << std::endl; 
-            xi = 0.01;
-            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
-            xi = 0.1;
-            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
-            xi = 0.5;
-            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
-            xi = 0.9;
-            std::cout << "xi = "<< xi << " : log(fgd) = " << xi * log(fgd) + (1.0-xi)*log(MSST_fgd) << "  log(bgd) = " << xi*log(bgd) + (1.0 - xi)*log(MSST_bgd) << std::endl; 
-            std::cout << "quot_st = " << quot_st << "  quot_color = " << quot_color << std::endl; 
-            std::cout << "log: quot_st = " << log(quot_st) << "  quot_color = " << log( quot_color ) << std::endl; 
-}
-//            std::cout << "com_bgd = " << com_bgd << "  com_fgd = " << com_fgd << "\n";
-
-
-/*            if(qout_color >= 1.0 && quot_st >= 1.0)
-                mask.at<uchar>(p.y, p.x) = GC_PR_FGD;
-            else if(qout_color < 1.0 && quot_st < 1.0)
-                mask.at<uchar>(p.y, p.x) = GC_PR_BGD;
-            else*/
-
-//            if( bgd > fgd)
-//            if( (xi * bgd) + (1-xi)* pow(MSST_bgd,3) > (xi * fgd) + (1-xi)* pow(MSST_fgd, 3))
-//            if( bgd * MSST_bgd > fgd * MSST_fgd )
             if( xi*log(bgd) + (1.0-xi)*log(MSST_bgd) > xi*log(fgd) + (1.0-xi)*log(MSST_fgd) )
                 mask.at<uchar>(p.y, p.x) = GC_PR_BGD;
             else
                 mask.at<uchar>(p.y, p.x) = GC_PR_FGD;
-
-            /*if( (bgd > fgd) && (com_bgd <= com_fgd))
-            {
-                mask.at<uchar>(p.y, p.x) = 10;
-                std::cout << counter++ << " com_bgd = " << com_bgd << "  com_fgd = " << com_fgd << "  bgd = " << bgd << " fgd = " << fgd << "\n";
-            } else if ((bgd <= fgd) && (com_bgd > com_fgd))
-            {
-                mask.at<uchar>(p.y, p.x) = 10;
-                std::cout << counter++ << " com_bgd = " << com_bgd << "  com_fgd = " << com_fgd << "  bgd = " << bgd << " fgd = " << fgd << "\n";
-            }*/
         }
     }
 
