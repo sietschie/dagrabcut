@@ -362,6 +362,7 @@ int main( int argc, char** argv )
     }
 
     cout << " ,xi: " << gcapp.getXi();
+    fs2 << "xi" << gcapp.getXi();
 
     cout << endl;
     if(interactive)
