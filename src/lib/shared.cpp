@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <fstream>
-#include "opencv2/highgui/highgui.hpp"
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include "gmm.hpp"
 #include "msst_gmm.hpp"
 
@@ -303,6 +304,31 @@ void computeGMM(std::string filename, const cv::Mat& image, const cv::Mat& mask,
         fs << "fgdModel" << fgdModel;
         fs.release();
 
+    }
+}
+
+void computeHuMoments(const cv::Mat &mask, int class_number, Vec<double,7> &res)
+{
+    Mat binMask(mask.size(), mask.type());
+    Point p;
+    for( p.y = 0; p.y < mask.rows; p.y++ )
+    {
+        for( p.x = 0; p.x < mask.cols; p.x++ )
+        {
+            if( mask.at<uchar>(p) != class_number)
+                binMask.at<uchar>(p) = 0;
+            else
+                binMask.at<uchar>(p) = 1;
+        }
+    }
+
+    double hu[7];
+    Moments mom = moments(binMask, true);
+    HuMoments(mom, hu);
+
+    for(int i=0;i<7;i++)
+    {
+        res[i] = hu[i];
     }
 }
 

@@ -26,6 +26,7 @@ void MSST_compute_variance(std::vector<std::string> input_images, cv::Mat mean_b
 
 void MSST_learnGMMfromSamples(const std::vector<std::vector<StructureTensor> > &samples, cv::Mat& model, int nr_gaussians = 5);
 
+void computeHuMoments(const cv::Mat &mask, int class_number, cv::Vec<double,7> &huMoment);
 
 #endif /* _SHARED_H_ */
 
