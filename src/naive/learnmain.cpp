@@ -122,5 +122,9 @@ int main( int argc, char** argv )
     fs2 << "var_fgd_kl_mr" << var_fgd_kl_mr;
     fs2 << "var_fgd_kl_rm" << var_fgd_kl_rm;
 
+    fs2 << "class_number" << class_number;
+
+    fs2.release();
+
     return 0;
 }

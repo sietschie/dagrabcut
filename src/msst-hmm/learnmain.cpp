@@ -251,6 +251,8 @@ int main( int argc, char** argv )
     fs2 << "msst_var_fgd_kl_mr" << msst_var_fgd_kl_mr;
     fs2 << "msst_var_fgd_kl_rm" << msst_var_fgd_kl_rm;
 
+    fs2 << "class_number" << class_number;
+
     fs2.release();
 
     return 0;

@@ -267,6 +267,9 @@ int main( int argc, char** argv )
     }
 
     FileStorage fs2(output_filename, FileStorage::WRITE);
+    fs2 << "model_filename" << model_filename;
+    fs2 << "class_number" << class_number;
+    fs2 << "max_iterations" << max_iterations;
     fs2 << "input_image" << input_image;
     fs2 << "mask" << gcapp.mask;
     fs2 << "initial_mask" << gcapp.initial_mask;
