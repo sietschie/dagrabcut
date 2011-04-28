@@ -13,5 +13,6 @@ add_subdirectory(msst-interactive)
 add_subdirectory(tests)
 add_subdirectory(refine-mscr)
 add_subdirectory(nldif)
+add_subdirectory(outlines2masks)
 
 
