@@ -19,12 +19,10 @@ po::variables_map parseCommandline(int argc, char** argv)
 
     po::options_description hidden("Hidden options");
     hidden.add_options()
-        ("output", po::value<string>()->required(), "the output file")
         ("algorithm result", po::value<string>()->required(), "the file containing the output masks")
     ;
 
     po::positional_options_description positional;
-    positional.add("output", 1);
     positional.add("algorithm result", 1);
 
     po::options_description cmdline_options;
@@ -139,12 +137,10 @@ int main( int argc, char** argv )
     po::variables_map vm = parseCommandline(argc, argv);
 
     string filename = vm["algorithm result"].as< string >();
-    string output_filename = vm["output"].as<string>();
 
     vector<Vec<double,7> > huMoments;
     vector<int> responses;
 
-    cout << "open model " << filename << "\n";
     FileStorage fs(filename, FileStorage::READ);
 
     string model_filename;
@@ -183,58 +179,15 @@ int main( int argc, char** argv )
     }
     fs_model.release();
 
-/*        Mat image, mask;
-        readImageAndMask(filename, image, mask);
-
-        Vec<double,7> huMoment;
-        computeHuMoments(mask, class_number, huMoment);
-        huMoments.push_back( huMoment );*/
-
-    // vector to matrix
-    Mat huMomentsMatrix(huMoments.size(), 7, CV_32FC1);
-    Mat responsesMatrix(responses.size(), 1, CV_32SC1);
-
-    for(int x=0;x<huMoments.size();x++)
-    {
-        for(int y=0;y<7;y++)
-        {
-            double tmp = huMoments[x][y];
-            huMomentsMatrix.at<float>(x,y) = tmp;
-            cout << tmp << "  ";
-        }
-        responsesMatrix.at<int>(x) = responses[x];
-        cout << responses[x] << "\n";
-    }
-
     Vec<double, 7> mean = computeMean( huMoments );
-    for(int y=0;y<7;y++)
-    {
-        cout << mean[y] << "  ";
-    }
-    cout << endl;
-
-
     Vec<double, 7> variances = computeVariance(huMoments);
-    
-    for(vector< Vec<double,7> >::iterator itr = huMoments.begin(); itr != huMoments.end(); itr++)
-    {
-        cout << "res = " << computeProbability( *itr, mean, variances) << endl;
-    }
+
+    double prob_humoments = computeProbability( huMoment, mean, variances);
 
     FileStorage fs2(filename, FileStorage::APPEND);
-    fs2 << "testvariable" << 6;
+    fs2 << "prob humoments" << prob_humoments;
     fs2.release();
 
-    cout << "-------------------\n";
+    cout << "prob humoments: " << prob_humoments << endl;
 
-    cout << " res = " << computeProbability( huMoment, mean, variances) << endl;
-
-    //fs2 << "huMoments" << huMomentsMatrix;
-
-    //CvSVM svm;
-
-    //CvSVMParams params;
-    //svm.train_auto(huMomentsMatrix, responsesMatrix, Mat(), Mat(), params, min<int>(10, huMoments.size()));
-
-    //std::cout << "jallo world...\n";
 }
