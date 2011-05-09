@@ -15,5 +15,6 @@ add_subdirectory(refine-mscr)
 add_subdirectory(nldif)
 add_subdirectory(shapes)
 add_subdirectory(outlines2masks)
+add_subdirectory(decrease-image-size)
 
 
