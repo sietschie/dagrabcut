@@ -230,6 +230,9 @@ int main( int argc, char** argv )
     fs["var_fgd_kl_sym"] >> var_fgd_kl_sym;
     fs["var_fgd_kl_mr"] >> var_fgd_kl_mr;
     fs["var_fgd_kl_rm"] >> var_fgd_kl_rm;
+    
+    int model_class_number;
+    fs["class_number"] >> model_class_number;
 
     fs.release();
 
@@ -269,6 +272,7 @@ int main( int argc, char** argv )
     FileStorage fs2(output_filename, FileStorage::WRITE);
     fs2 << "model_filename" << model_filename;
     fs2 << "class_number" << class_number;
+    fs2 << "model_class_number" << model_class_number;
     fs2 << "max_iterations" << max_iterations;
     fs2 << "input_image" << input_image;
     fs2 << "mask" << gcapp.mask;
