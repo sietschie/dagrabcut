@@ -19,11 +19,13 @@ po::variables_map parseCommandline(int argc, char** argv)
 
     po::options_description hidden("Hidden options");
     hidden.add_options()
-        ("algorithm result", po::value<string>()->required(), "the file containing the output masks")
+        ("model file", po::value<string>()->required(), "the model file to test with")
+        ("algorithm results", po::value<vector<string> >()->required(), "the files containing the output masks")
     ;
 
     po::positional_options_description positional;
-    positional.add("algorithm result", 1);
+    positional.add("model file", 1);
+    positional.add("algorithm results", -1);
 
     po::options_description cmdline_options;
     cmdline_options.add(generic).add(hidden);
@@ -39,7 +41,7 @@ po::variables_map parseCommandline(int argc, char** argv)
 
     } catch ( std::exception& e )
     {
-        cout << "Usage: ./shapes.bin [options] outputfile resultfile1\n";
+        cout << "Usage: ./shapes.bin [options] outputfile resultfile1 resultfile2 ... \n";
         cout << visible << endl;
         if(!vm.count("help"))
         {
@@ -136,29 +138,14 @@ int main( int argc, char** argv )
 {
     po::variables_map vm = parseCommandline(argc, argv);
 
-    string filename = vm["algorithm result"].as< string >();
+    string model_filename = vm["model file"].as< string >();
+    vector<string> filenames = vm["algorithm results"].as< vector<string> >();
 
-    vector<Vec<double,7> > huMoments;
-    vector<int> responses;
-
-    FileStorage fs(filename, FileStorage::READ);
-
-    string model_filename;
-    fs["model_filename"] >> model_filename;
-
-    Mat mask;
-    fs["mask"] >> mask;
-
-    double class_number;
-    fs["class_number"] >> class_number;
-    fs.release();
-
-    Vec<double, 7> huMoment;
-    computeHuMoments(mask, class_number, huMoment);
+    // read in masks from model file
+    vector<Vec<double,7> > huMoments_train;
+    vector<int> responses_train;
 
     FileStorage fs_model(model_filename, FileStorage::READ);
-
-
     FileNodeIterator fni = fs_model["files"].begin();
     for(; fni != fs_model["files"].end(); fni++)
     {
@@ -174,20 +161,72 @@ int main( int argc, char** argv )
         Vec<double, 7> huMoment;
         computeHuMoments(mask, class_number, huMoment);
 
-        huMoments.push_back(huMoment);
-        responses.push_back(class_number);
+        huMoments_train.push_back(huMoment);
+        responses_train.push_back(class_number);
     }
     fs_model.release();
 
-    Vec<double, 7> mean = computeMean( huMoments );
-    Vec<double, 7> variances = computeVariance(huMoments);
+    // compute mean, variance
+    Vec<double, 7> mean = computeMean( huMoments_train );
+    Vec<double, 7> variances = computeVariance(huMoments_train);
 
-    double prob_humoments = computeProbability( huMoment, mean, variances);
+    // compute knn-distances
+    // vector to matrix
+    Mat huMomentsMatrix(huMoments_train.size(), 7, CV_32FC1);
+    Mat responsesMatrix(responses_train.size(), 1, CV_32SC1);
 
-    FileStorage fs2(filename, FileStorage::APPEND);
-    fs2 << "prob humoments" << prob_humoments;
-    fs2.release();
+    for(int x=0;x<huMoments_train.size();x++)
+    {
+        for(int y=0;y<7;y++)
+        {
+            double tmp = huMoments_train[x][y];
+            huMomentsMatrix.at<float>(x,y) = tmp;
+        }
+        responsesMatrix.at<int>(x) = responses_train[x];
+    }
 
-    cout << "prob humoments: " << prob_humoments << endl;
 
+    CvKNearest knn;
+    knn.train(huMomentsMatrix, responsesMatrix);
+
+    for(vector<string>::iterator itr = filenames.begin(); itr != filenames.end(); itr++)
+    {
+        FileStorage fs(*itr, FileStorage::READ);
+
+        Mat mask;
+        fs["mask"] >> mask;
+        fs.release();
+
+        Vec<double, 7> huMoment;
+        computeHuMoments(mask, huMoment);
+
+        Mat inputMatrix(1, 7, CV_32FC1);
+        for(int y=0;y<7;y++)
+            inputMatrix.at<float>(0,y) = huMoment[y];
+        //fs2 << "huMoments" << huMomentsMatrix;
+
+        FileStorage fs2(*itr, FileStorage::APPEND);
+
+        Mat dist;
+        knn.find_nearest(inputMatrix, 1, NULL, NULL, NULL, &dist);
+
+        cout << "dist humoments 1nn: " << dist.at<float>(0,0);
+        fs2 << "dist humoments 1nn" << dist.at<float>(0,0);
+
+        knn.find_nearest(inputMatrix, 3, NULL, NULL, NULL, &dist);
+        cout << ", dist humoments 3nn: " << dist.at<float>(0,0) + dist.at<float>(0,1) + dist.at<float>(0,2);
+        fs2 << "dist humoments 3nn" << dist.at<float>(0,0) + dist.at<float>(0,1) + dist.at<float>(0,2);
+
+
+        double prob_humoments = computeProbability( huMoment, mean, variances);
+
+        fs2 << "prob humoments" << prob_humoments;
+        fs2.release();
+
+        cout << ", prob humoments: " << prob_humoments;
+
+        cout << endl;
+    }
+
+    return 0;
 }

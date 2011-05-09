@@ -332,4 +332,29 @@ void computeHuMoments(const cv::Mat &mask, int class_number, Vec<double,7> &res)
     }
 }
 
+void computeHuMoments(const cv::Mat &mask, Vec<double,7> &res)
+{
+    Mat binMask(mask.size(), mask.type());
+    Point p;
+    for( p.y = 0; p.y < mask.rows; p.y++ )
+    {
+        for( p.x = 0; p.x < mask.cols; p.x++ )
+        {
+            if( mask.at<uchar>(p) % 2 == 1)
+                binMask.at<uchar>(p) = 1;
+            else
+                binMask.at<uchar>(p) = 0;
+        }
+    }
+
+    double hu[7];
+    Moments mom = moments(binMask, true);
+    HuMoments(mom, hu);
+
+    for(int i=0;i<7;i++)
+    {
+        res[i] = hu[i];
+    }
+}
+
 
