@@ -109,15 +109,9 @@ int main( int argc, char** argv )
 
 
     bool move = false;
-    if( image.cols < 200 || image.rows < 200 )
+    if( image.cols < 100 || image.rows < 100 )
     {
 	cout << "file to small..." << endl;
-	move = true;
-    }
-
-    if( image.cols * image.rows > 1000000 )
-    {
-	cout << "file to big..." << endl;
 	move = true;
     }
 
@@ -127,7 +121,7 @@ int main( int argc, char** argv )
 	move = true;
     }
 
-    if( average < 0.05 )
+    if( average < 0.01 )
     {
 	cout << "region to small... " << average << endl;
 	move = true;
